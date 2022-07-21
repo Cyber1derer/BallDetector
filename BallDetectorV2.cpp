@@ -55,7 +55,6 @@ void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, 
 Mat useColorFilter(Mat& img, Mat& v, Scalar& p0, double& t1, double& t2, double& R, int& nx, int& ny)  // Applies previously obtained coefficients and builds an alpha mask on the image.
 {
     Mat pi;
-    cout << "t1 = " << t1 << endl << "t2 = " << t2 << endl;
     for (int y = 0; y < img.rows; ++y)
     {
         for (int x = 0; x < img.cols; ++x)
@@ -263,7 +262,8 @@ void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, f
             img.at<Vec3b>(PixCord[i])[2] = 0;
         }
     }
-    imshow("Obvodka", img);
+    //imshow("Obvodka", img);
+    //imwrite("gran.bmp", img);
 }
 void BallPixSize(vector<Point2f> grad) {
     int maxX = 0;
@@ -304,33 +304,45 @@ int main(int argc, char* argv[])
     //Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallWithLightRightCut.bmp", 1);
 
     Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\ColorCut.bmp", 1);
+    if (pts.rows == 0 || pts.cols == 0) {
+        cout << "Color example Not Found not found" << endl;
+        return 0;
+    }
     Scalar p0;
     Mat v(1, 3, CV_64F);
     double t1, t2, R;
-
-
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
-    for (int cikle = 0; cikle < 1; ++cikle) {
-        Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
+    for (int cikle = 0; cikle < 10; ++cikle) {
+        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
+        Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\5.bmp", 1);
 
         //erode(img, img, Mat(), Point(-1, -1), 5);
         //dilate(img, img, Mat(), Point(-1, -1), 5);
-
+        if (img.rows == 0 || img.cols == 0) {
+            cout << "Picture not found" << endl;
+            return 0;
+        }
         int ny = img.rows;
         int nx = img.cols;
         Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
+        if (Gray_mask.rows == 0 || Gray_mask.cols == 0) {
+            cout << "Object not found on the picture" << endl;
+            return 0;
+        }
         Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
         //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
         //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 50, 255, cv::THRESH_BINARY_INV);
+        cv::threshold(Gray_mask, BinaryMask, 20, 255, cv::THRESH_BINARY_INV);
+        //imwrite("Gray.png", Gray_mask);
+        //imwrite("Bin.png", BinaryMask);
         vector < vector<Point> > gradcv;
         cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
         cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
         vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
 
         BallPixSize(gradcvConv);
-        drawContours(img, gradcv, -1, (0, 255, 255), 1);
+        //drawContours(img, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
         Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
         vector<int> distCoeffs = { 0,0,0,0 };
@@ -344,7 +356,7 @@ int main(int argc, char* argv[])
         //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
         float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.00001; // Distants between plane
+        float k = 0.00008; // Distants between plane
         float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
@@ -353,7 +365,7 @@ int main(int argc, char* argv[])
         //imwrite("conturImg.png", img);
         //writer(iva_norm);
         //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
-        cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
+        //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
 
         //find the cone apex angele 
         double theta;
@@ -363,18 +375,19 @@ int main(int argc, char* argv[])
             sumarc += acos((max_plane[0] * iva_norm[i].x + max_plane[1] * iva_norm[i].y + max_plane[2] * iva_norm[i].z) / normaNormali);
         }
         theta = 2 * (sumarc / iva_norm.size());
-        cout << "theta = " << theta << endl;
+        //cout << "theta = " << theta << endl;
         float RadiusBall = 0.15000;
         double distans = RadiusBall / (sin(theta / 2));
         Point3f ballCoordinates;
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];
         ballCoordinates.y = (distans / normaNormali) * max_plane[1];
         ballCoordinates.z = (distans / normaNormali) * max_plane[2];
+        //cout << " Image #" << cikle << endl;
         cout << "result = " << ballCoordinates << endl;
-        cout << "distance = " << distans << endl;
+        //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
     }
-    writer(resultsCord);
+    //writer(resultsCord);
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
     cout << "Programm complete " << finalTime << " sec" << endl;
