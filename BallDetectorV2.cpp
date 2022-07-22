@@ -15,7 +15,9 @@
 
 using namespace cv;
 using namespace std;
-
+void jsonParser()
+{
+}
 void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R) // Calculates coefficients (cylinder) from the passed points of the same color (pts)
 {
     p0 = mean(pts);
@@ -103,7 +105,7 @@ void writer(vector<Point2f>& text) {
 }
 void writer(vector<Point3f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("D:\\Sirius\\BallDetectorV2\\UndistortHome.txt"); // окрываем файл для записи
+    out.open("C://tmp//logBalldetector.txt"); // окрываем файл для записи
     //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
     if (out.is_open())
     {
@@ -298,14 +300,9 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
 int main(int argc, char* argv[])
 {
     long int timer1 = getTickCount();
-	//Mat img = imread("C:\\Users\\Student\\DenisV\\kurs\\BallDetectorV2\\0.png", 1);
-	//Mat pts = imread("C:\\Users\\Student\\DenisV\\kurs\\\BallDetectorV2\\EdgColorForTestBlenderCut.png", 1);
-    //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallMoveExperement1_2.bmp", 1);
-    //Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallWithLightRightCut.bmp", 1);
-
-    Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\ColorCut.bmp", 1);
+    Mat pts = imread("..\\..\\..\\dataFromRealCamera\\ColorKutWhite.bmp", 1);
     if (pts.rows == 0 || pts.cols == 0) {
-        cout << "Color example Not Found not found" << endl;
+        cout << "Color example not found" << endl;
         return 0;
     }
     Scalar p0;
@@ -313,13 +310,11 @@ int main(int argc, char* argv[])
     double t1, t2, R;
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
-    for (int cikle = 0; cikle < 10; ++cikle) {
-        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
-        Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\5.bmp", 1);
+    for (int cikle = 0; cikle < 1; ++cikle) {
+        Mat img = imread("..\\..\\..\\dataFromRealCamera\\tttest.bmp", 1);
+        Mat origin = img;
 
-        //erode(img, img, Mat(), Point(-1, -1), 5);
-        //dilate(img, img, Mat(), Point(-1, -1), 5);
-        if (img.rows == 0 || img.cols == 0) {
+        if (img.rows <= 10 || img.cols <= 10) {
             cout << "Picture not found" << endl;
             return 0;
         }
@@ -331,14 +326,27 @@ int main(int argc, char* argv[])
             return 0;
         }
         Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
+        Mat BinaryMask2(ny, nx, CV_8U, Scalar(0));
+        Mat BinaryMask3(ny, nx, CV_8U, Scalar(0));
+
+
         //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
         //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 20, 255, cv::THRESH_BINARY_INV);
+        cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
         //imwrite("Gray.png", Gray_mask);
-        //imwrite("Bin.png", BinaryMask);
+        // 
+        //morphologyEx(BinaryMask, BinaryMask, MORPH_GRADIENT, Mat(3,3, CV_8U, Scalar(1)));
+        // 
+        //erode(img, img, Mat(), Point(-1, -1), 5);
+        //dilate(img, img, Mat(), Point(-1, -1), 1);
+        imwrite("Bin.png", BinaryMask);
         vector < vector<Point> > gradcv;
         cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
         cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+        cout << "GradSize: " << gradcv.size() << endl;
+        for (int b = 0; b < gradcv.size(); ++b) {
+            cout << "Sizeof" << b << ": " << gradcv[b].size() << endl;
+        }
         vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
 
         BallPixSize(gradcvConv);
@@ -356,13 +364,13 @@ int main(int argc, char* argv[])
         //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
         float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.00008; // Distants between plane
+        float k = 0.000002; // Distants between plane
         float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
-        inPointPaint(v_norm, gradcvConv, img, max_plane, k);
-        //imwrite("conturImg.png", img);
+        inPointPaint(v_norm, gradcvConv, origin, max_plane, k);
+        imwrite("conturImg.png", origin);
         //writer(iva_norm);
         //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
         //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
