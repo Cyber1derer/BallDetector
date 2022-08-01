@@ -300,7 +300,7 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
 int main(int argc, char* argv[])
 {
     long int timer1 = getTickCount();
-    Mat pts = imread("..\\..\\..\\dataFromRealCamera\\ColorKutWhite.bmp", 1);
+    Mat pts = imread("..\\..\\..\\dataFromRealCamera\\ColorCutYellowPhotoshop.bmp", 1);
     if (pts.rows == 0 || pts.cols == 0) {
         cout << "Color example not found" << endl;
         return 0;
@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
     for (int cikle = 0; cikle < 1; ++cikle) {
-        Mat img = imread("..\\..\\..\\dataFromRealCamera\\tttest.bmp", 1);
+        Mat img = imread("..\\..\\..\\dataFromRealCamera\\test\\2.bmp", 1);
         Mat origin = img;
 
         if (img.rows <= 10 || img.cols <= 10) {
@@ -329,17 +329,22 @@ int main(int argc, char* argv[])
         Mat BinaryMask2(ny, nx, CV_8U, Scalar(0));
         Mat BinaryMask3(ny, nx, CV_8U, Scalar(0));
 
-
-        //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
+ 
+        cv::threshold(Gray_mask, BinaryMask, 100, 255, cv::THRESH_BINARY_INV);
         //imwrite("Gray.png", Gray_mask);
         // 
         //morphologyEx(BinaryMask, BinaryMask, MORPH_GRADIENT, Mat(3,3, CV_8U, Scalar(1)));
-        // 
+
+
+        erode(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
+        dilate(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
+
+        //erode(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
+        //dilate(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
         //erode(img, img, Mat(), Point(-1, -1), 5);
         //dilate(img, img, Mat(), Point(-1, -1), 1);
         imwrite("Bin.png", BinaryMask);
+        imwrite("Gray.png", Gray_mask);
         vector < vector<Point> > gradcv;
         cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
         cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -352,10 +357,16 @@ int main(int argc, char* argv[])
         BallPixSize(gradcvConv);
         //drawContours(img, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
-        Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
-        vector<int> distCoeffs = { 0,0,0,0 };
-        Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
-        Mat Rx = (Mat_<int>(3, 3) << 1, 0, 0, 0, -1, 0, 0, 0, 1);
+        //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
+        Mat cameraMatrix = (Mat_<double>(3, 3) << 1.27302252272186547088e+03, 0.00000000000000000000e+00, 6.55849702791097229237e+02, 0.00000000000000000000e+00, 1.27310110842967469580e+03, 5.36500860409391975736e+02, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 1.00000000000000000000e+00);
+        vector<double> distCoeffs = { -1.13717605280440309246e-01, 1.81257636857713316791e-01, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 5.14235391221413845608e-02 };
+        double kletka = 0.0445;
+        //Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
+        Mat P = (Mat_<double>(3, 4) << 1, 0, 0, 0.0129465 * kletka, 0, 1, 0, 0.07407535 * kletka, 0, 0, 1, 3.10494902 * kletka);//New "ideal" cameramatrix
+        //Mat Rx = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
+        Mat Rxvec = (Mat_<double>(3, 1) << 0.0129465, 0.07407535, 3.10494902);
+        Mat Rx = (Mat_<double>(3, 3));
+        Rodrigues(Rxvec, Rx);
         undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
         vector <Point3f> a;
         converter2To3(grad2, a);
@@ -364,7 +375,7 @@ int main(int argc, char* argv[])
         //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
         float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.000002; // Distants between plane
+        float k = 0.000004; // Distants between plane
         float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
@@ -384,7 +395,7 @@ int main(int argc, char* argv[])
         }
         theta = 2 * (sumarc / iva_norm.size());
         //cout << "theta = " << theta << endl;
-        float RadiusBall = 0.15000;
+        float RadiusBall = 0.0332;
         double distans = RadiusBall / (sin(theta / 2));
         Point3f ballCoordinates;
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];

@@ -11,3 +11,5 @@ add_executable (BallDetectorV2 "BallDetectorV2.cpp" "BallDetectorV2.h")
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
 find_package(OpenCV REQUIRED)
 target_link_libraries(BallDetectorV2  ${OpenCV_LIBS})
+
+
