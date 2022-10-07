@@ -1,23 +1,21 @@
 ﻿// BallDetectorV2.cpp: определяет точку входа для приложения.
 //
-
-#include "BallDetectorV2.h"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <opencv2/imgproc.hpp> // for undestornPoint
+#include <fstream>
 #include <iostream>
 #include <cmath>
+#include "BallDetectorV2.h"
+#include <opencv2/calib3d.hpp> // Undistort and Rodrigues 
+#include <opencv2/imgproc.hpp> //FindCont
+#include <opencv2/imgcodecs.hpp> //Imread
+#include <opencv2/highgui.hpp> // Waitkey
+#include <nlohmann/json.hpp>
 
-#include <opencv2/opencv.hpp>
 
-#include <fstream>
-
+using json = nlohmann::json; // synonim for data type nlohmann::json
 
 using namespace cv;
 using namespace std;
-void jsonParser()
-{
-}
+
 void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R) // Calculates coefficients (cylinder) from the passed points of the same color (pts)
 {
     p0 = mean(pts);
@@ -94,7 +92,7 @@ Mat useColorFilter(Mat& img, Mat& v, Scalar& p0, double& t1, double& t2, double&
 
 void writer(vector<Point2f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("D:\\Sirius\\BallDetectorV2\\UndistortHome.txt"); // окрываем файл для записи
+    out.open("C:\\log\\UndistortHome.txt"); // окрываем файл для записи
     //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
     if (out.is_open())
     {
@@ -105,7 +103,7 @@ void writer(vector<Point2f>& text) {
 }
 void writer(vector<Point3f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("C://tmp//logBalldetector.txt"); // окрываем файл для записи
+    out.open("C:\\log\\UndistortHome.txt"); // окрываем файл для записи
     //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
     if (out.is_open())
     {
@@ -299,10 +297,20 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
 }
 int main(int argc, char* argv[])
 {
+
     long int timer1 = getTickCount();
-    Mat pts = imread("..\\..\\..\\dataFromRealCamera\\ColorCutYellowPhotoshop.bmp", 1);
+
+    std::ifstream file("../../../intrinsics0.json");
+    json  intrinsics = json::parse(file)["intrinsics"];
+    file.close();
+    std::vector<double> temp = intrinsics["K"];
+    for (auto const& i : temp) {
+        std::cout << i << " ";
+    }
+
+    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
     if (pts.rows == 0 || pts.cols == 0) {
-        cout << "Color example not found" << endl;
+        cout << "Color example Not Found not found" << endl;
         return 0;
     }
     Scalar p0;
@@ -311,10 +319,12 @@ int main(int argc, char* argv[])
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
     for (int cikle = 0; cikle < 1; ++cikle) {
-        Mat img = imread("..\\..\\..\\dataFromRealCamera\\test\\2.bmp", 1);
-        Mat origin = img;
+        //Mat img = imread("C:\\Users\\Student\\DenisV\\kurs\\OctBall\\BallDetector\\Data\\2DMoveData\\" + to_string(cikle) + ".bmp", 1);
+        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\5.png", 1);
 
-        if (img.rows <= 10 || img.cols <= 10) {
+        //erode(img, img, Mat(), Point(-1, -1), 5);
+        //dilate(img, img, Mat(), Point(-1, -1), 5);
+        if (img.rows == 0 || img.cols == 0) {
             cout << "Picture not found" << endl;
             return 0;
         }
@@ -326,48 +336,26 @@ int main(int argc, char* argv[])
             return 0;
         }
         Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-        Mat BinaryMask2(ny, nx, CV_8U, Scalar(0));
-        Mat BinaryMask3(ny, nx, CV_8U, Scalar(0));
-
- 
-        cv::threshold(Gray_mask, BinaryMask, 100, 255, cv::THRESH_BINARY_INV);
-        //imwrite("Gray.png", Gray_mask);
-        // 
-        //morphologyEx(BinaryMask, BinaryMask, MORPH_GRADIENT, Mat(3,3, CV_8U, Scalar(1)));
-
-
-        erode(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
-        dilate(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
-
-        //erode(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
-        //dilate(BinaryMask, BinaryMask, Mat(), Point(-1, -1), 3);
-        //erode(img, img, Mat(), Point(-1, -1), 5);
-        //dilate(img, img, Mat(), Point(-1, -1), 1);
-        imwrite("Bin.png", BinaryMask);
+        //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+        //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+        cv::threshold(Gray_mask, BinaryMask, 20, 255, cv::THRESH_BINARY_INV);
         imwrite("Gray.png", Gray_mask);
+        imwrite("Bin.png", BinaryMask);
         vector < vector<Point> > gradcv;
-        cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
+        //cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
         cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-        cout << "GradSize: " << gradcv.size() << endl;
-        for (int b = 0; b < gradcv.size(); ++b) {
-            cout << "Sizeof" << b << ": " << gradcv[b].size() << endl;
-        }
         vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
 
-        BallPixSize(gradcvConv);
-        //drawContours(img, gradcv, -1, (0, 255, 255), 1);
+        //BallPixSize(gradcvConv);
+        drawContours(img, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
-        //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
-        Mat cameraMatrix = (Mat_<double>(3, 3) << 1.27302252272186547088e+03, 0.00000000000000000000e+00, 6.55849702791097229237e+02, 0.00000000000000000000e+00, 1.27310110842967469580e+03, 5.36500860409391975736e+02, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 1.00000000000000000000e+00);
-        vector<double> distCoeffs = { -1.13717605280440309246e-01, 1.81257636857713316791e-01, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 5.14235391221413845608e-02 };
-        double kletka = 0.0445;
-        //Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
-        Mat P = (Mat_<double>(3, 4) << 1, 0, 0, 0.0129465 * kletka, 0, 1, 0, 0.07407535 * kletka, 0, 0, 1, 3.10494902 * kletka);//New "ideal" cameramatrix
-        //Mat Rx = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);
-        Mat Rxvec = (Mat_<double>(3, 1) << 0.0129465, 0.07407535, 3.10494902);
-        Mat Rx = (Mat_<double>(3, 3));
-        Rodrigues(Rxvec, Rx);
-        undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
+        Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
+        vector<float> distCoeffs = { 0,0,0,0 };
+        Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
+        Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1);
+        cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
+        cv::Rodrigues(Rx, rvecR);
+        cv::undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
         vector <Point3f> a;
         converter2To3(grad2, a);
         vector <Point3f> v_norm;
@@ -375,13 +363,12 @@ int main(int argc, char* argv[])
         //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
         float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.000004; // Distants between plane
+        float k = 0.000008; // Distants between plane
         float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
-        inPointPaint(v_norm, gradcvConv, origin, max_plane, k);
-        imwrite("conturImg.png", origin);
+        inPointPaint(v_norm, gradcvConv, img, max_plane, k);
         //writer(iva_norm);
         //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
         //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
@@ -395,17 +382,49 @@ int main(int argc, char* argv[])
         }
         theta = 2 * (sumarc / iva_norm.size());
         //cout << "theta = " << theta << endl;
-        float RadiusBall = 0.0332;
+        float RadiusBall = 1.0;
         double distans = RadiusBall / (sin(theta / 2));
         Point3f ballCoordinates;
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];
         ballCoordinates.y = (distans / normaNormali) * max_plane[1];
         ballCoordinates.z = (distans / normaNormali) * max_plane[2];
-        //cout << " Image #" << cikle << endl;
+        cout << " Image #" << cikle << endl;
         cout << "result = " << ballCoordinates << endl;
         //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
-    }
+
+        //projection true coordinate 
+        vector<cv::Point2f> ProjectPoints2;
+        vector<cv::Point3f> TrueCoord;
+        TrueCoord.push_back(Point3f(5.34507, 4.60824, 30.0));
+        cv::Mat T(3, 1, CV_64F, Scalar(0)); // translation vector
+
+        cv::projectPoints(TrueCoord, rvecR, T, cameraMatrix, distCoeffs, ProjectPoints2);
+        cout << "ProjectPoints True coordinate:    " << ProjectPoints2[0] << endl;
+        ProjectPoints2[0].x = round(ProjectPoints2[0].x);
+        ProjectPoints2[0].y = round(ProjectPoints2[0].y);
+
+        img.at<Vec3b>(ProjectPoints2[0])[2] = 0;  //sea color
+        img.at<Vec3b>(ProjectPoints2[0]) [0] = 255;
+        img.at<Vec3b>(ProjectPoints2[0])[1] = 255;
+
+        //projection find coordinate 
+        vector<cv::Point3f> FindCord;
+        FindCord.push_back(Point3f(5.36955, 4.6314, 30.0885));
+        cv::projectPoints(FindCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPoints2);
+        cout << "ProjectPoints find coordinate:    " << ProjectPoints2[0] << endl;
+        ProjectPoints2[0].x = round(ProjectPoints2[0].x);
+        ProjectPoints2[0].y = round(ProjectPoints2[0].y);
+
+        img.at<Vec3b>(ProjectPoints2[0])[2] = 255; // yellow color
+        img.at<Vec3b>(ProjectPoints2[0])[0] = 0;
+        img.at<Vec3b>(ProjectPoints2[0])[1] = 255;
+
+
+
+
+        imwrite("ConturAndCenterImg.png", img);
+    }   
     //writer(resultsCord);
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
