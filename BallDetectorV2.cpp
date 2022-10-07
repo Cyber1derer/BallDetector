@@ -9,12 +9,15 @@
 #include <opencv2/imgcodecs.hpp> //Imread
 #include <opencv2/highgui.hpp> // Waitkey
 #include <nlohmann/json.hpp>
+#include <typeinfo>
 
 
 using json = nlohmann::json; // synonim for data type nlohmann::json
 
 using namespace cv;
 using namespace std;
+#include <opencv2/core/utils/logger.hpp>
+
 
 void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R) // Calculates coefficients (cylinder) from the passed points of the same color (pts)
 {
@@ -295,19 +298,25 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     }
     return SumErr;
 }
+
 int main(int argc, char* argv[])
 {
+    //cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
 
     long int timer1 = getTickCount();
-
+    //read json file
     std::ifstream file("../../../intrinsics0.json");
     json  intrinsics = json::parse(file)["intrinsics"];
     file.close();
-    std::vector<double> temp = intrinsics["K"];
-    for (auto const& i : temp) {
-        std::cout << i << " ";
-    }
+    //get verb from json
+    std::vector<double> tempVerb1 = intrinsics["K"];
+    //for (auto const& i : temp) {
+        //std::cout << i << " ";
+    //}
 
+    cv::Matx<double, 3, 3> cameraMatrix(tempVerb1.data()); // initialize from plain array
+    std::vector<double> tempVerb2 = intrinsics["distortion"];
+    cv::Vec<double, 5> distCoeffs(tempVerb2.data());
     Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
     if (pts.rows == 0 || pts.cols == 0) {
         cout << "Color example Not Found not found" << endl;
@@ -318,7 +327,7 @@ int main(int argc, char* argv[])
     double t1, t2, R;
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
-    for (int cikle = 0; cikle < 1; ++cikle) {
+    for (int cikle = 0; cikle < 10; ++cikle) {
         //Mat img = imread("C:\\Users\\Student\\DenisV\\kurs\\OctBall\\BallDetector\\Data\\2DMoveData\\" + to_string(cikle) + ".bmp", 1);
         Mat img = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\5.png", 1);
 
@@ -349,7 +358,7 @@ int main(int argc, char* argv[])
         //BallPixSize(gradcvConv);
         drawContours(img, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
-        Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
+        //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
         vector<float> distCoeffs = { 0,0,0,0 };
         Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
         Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1);
@@ -425,7 +434,7 @@ int main(int argc, char* argv[])
 
         imwrite("ConturAndCenterImg.png", img);
     }   
-    //writer(resultsCord);
+    writer(resultsCord);
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
     cout << "Programm complete " << finalTime << " sec" << endl;
