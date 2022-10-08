@@ -6,8 +6,13 @@ cmake_minimum_required (VERSION 3.8)
 project ("BallDetectorV2")
 
 # Добавьте источник в исполняемый файл этого проекта.
-add_executable (BallDetectorV2 "BallDetectorV2.cpp" "BallDetectorV2.h")
+add_executable (${PROJECT_NAME}  "BallDetectorV2.cpp" "BallDetectorV2.h")
 
 # TODO: Добавьте тесты и целевые объекты, если это необходимо.
 find_package(OpenCV REQUIRED)
-target_link_libraries(BallDetectorV2  ${OpenCV_LIBS})
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json  ${OpenCV_LIBS})
+
+
+
