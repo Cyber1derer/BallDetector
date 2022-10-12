@@ -236,7 +236,35 @@ void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_coun
     cout << "iter" << iter << endl;
 }
 
+void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_counter, int& abs_iter)
+{
+    float max_counter = 0.;
+    float counter = 0.;
+    int iter = 0;
+    int n = ptr.size();
+    float plane[4];
 
+    while (max_counter < abs_counter && iter < abs_iter)
+    {
+        Point3f ptr1 = ptr[iter];
+        Point3f ptr2 = ptr[iter + n / 3];
+        Point3f ptr3 = ptr[iter + n * 2 / 3];
+        makePlane(ptr1, ptr2, ptr3, plane);
+        counter = counterPlane(plane, k, ptr);
+        //cout << counter << endl;
+        if (counter > max_counter)
+        {
+            max_counter = counter;
+            max_plane[0] = plane[0];
+            max_plane[1] = plane[1];
+            max_plane[2] = plane[2];
+            max_plane[3] = plane[3];
+        }
+        ++iter;
+    }
+    cout << "max counter" << max_counter << endl;
+    cout << "iter" << iter << endl;
+}
 void inPoint(float* plane, vector<Point3f>& ptr, vector<Point3f>& inptr, float& k)
 {
     int n = ptr.size();
@@ -335,7 +363,7 @@ int main(int argc, char* argv[])
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
 
-    for (int cikle = 0; cikle < 10; ++cikle) {
+    for (int cikle = 0; cikle < 50; ++cikle) {
         Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\" + to_string(cikle) + ".png", 1);
         //Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\45.png", 1);
 
@@ -438,18 +466,18 @@ int main(int argc, char* argv[])
 
         */
     }    
-    //writer(resultsCord);
+    writer(resultsCord);
     // 
     // 
     //get verb from json
     //int CountCoord = TrueCoord.at("Count")[0];
-    vector<cv::Point2f> ProjectPointsFind;
-    cv::Mat T(3, 1, CV_64F, Scalar(0)); // translation vector
-    cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
+    //vector<cv::Point2f> ProjectPointsFind;
+    //cv::Mat T(3, 1, CV_64F, Scalar(0)); // translation vector
+    //cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
+    //cout << "ProjectPointsFind : " << ProjectPointsFind << endl; 
 
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
-    cout << "ProjectPointsFind : " << ProjectPointsFind << endl; 
     cout << "Programm complete " << finalTime << " sec" << endl;
     waitKey(0);
 	return 0;
