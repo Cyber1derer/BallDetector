@@ -1,2 +1,7 @@
 out
+<<<<<<< HEAD
 .vs
+=======
+.vs
+.vscode
+>>>>>>> cb4cad76d791f925d68ec6b768b51defe903a87d
