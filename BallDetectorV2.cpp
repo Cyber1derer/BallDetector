@@ -244,11 +244,15 @@ void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& 
     int n = ptr.size();
     float plane[4];
 
+    Point3f ptr1 = rand() % n;
+
     while (max_counter < abs_counter && iter < abs_iter)
     {
-        Point3f ptr1 = ptr[iter];
-        Point3f ptr2 = ptr[iter + n / 3];
-        Point3f ptr3 = ptr[iter + n * 2 / 3];
+        //i1 =  % N;
+        Point3f ptr2 = rand() % n;
+        Point3f ptr3 = rand() % n;
+        //Point3f ptr2 = ptr[iter + n / 3];
+        //Point3f ptr3 = ptr[iter + n * 2 / 3];
         makePlane(ptr1, ptr2, ptr3, plane);
         counter = counterPlane(plane, k, ptr);
         //cout << counter << endl;
@@ -345,7 +349,7 @@ int main(int argc, char* argv[])
     cv::Matx<double, 3, 3> cameraMatrix(tempVerb1.data()); // initialize from plain array
     std::vector<double> tempVerb2 = intrinsics["distortion"];
     cv::Vec<double, 5> distCoeffs(tempVerb2.data());
-    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
+    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveWhitsFocusXMinus\\ColorCut.bmp", 1);
     if (pts.rows == 0 || pts.cols == 0) {
         cout << "Color example Not Found not found" << endl;
         return 0;
@@ -364,7 +368,7 @@ int main(int argc, char* argv[])
     cv::Rodrigues(Rx, rvecR);
 
     for (int cikle = 0; cikle < 50; ++cikle) {
-        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\" + to_string(cikle) + ".png", 1);
+        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveWhitsFocusXMinus\\" + to_string(cikle) + ".png", 1);
         //Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\45.png", 1);
 
         //erode(img, img, Mat(), Point(-1, -1), 5);
