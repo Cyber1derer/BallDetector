@@ -29,6 +29,7 @@ def DeleteTrash(pathTxtFile):
     with open (pathTxtFile, 'w') as f:
         f.write(new_data)
 
+<<<<<<< HEAD
 DeleteTrash("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/BallDetectorLog3DMove50.txt")
 FindCord = np.loadtxt("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/BallDetectorLog3DMove50.txt")
 
@@ -36,6 +37,27 @@ DeleteTrash("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/LogBlenderC
 TrueCord = np.loadtxt("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
 
 with open('C:/Users/Student/DenisV/kurs/Oct2/BallDetector/CameraParametrs.json') as f:
+=======
+#DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMoveWithFockusMinus.txt")
+#FindCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMoveWithFockusMinus.txt")
+#
+#DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMoveWithFocusXMinus.txt")
+#TrueCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMoveWithFocusXMinus.txt")
+
+
+DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMove50.txt")
+FindCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMove50.txt")
+DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
+TrueCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
+
+#DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMoveWithFockusPlus.txt")
+#FindCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMoveWithFockusPlus.txt")
+#
+#DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMoveWithFocusXPlus.txt")
+#TrueCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMoveWithFocusXPlus.txt")
+
+with open('D:/Sirius/FolderForBallDetector/OctBall/BallDetector/CameraParametrs.json') as f:
+>>>>>>> 2eca2dc59036cd8fbed14412bf621d0ac12af7a4
     templates = json.load(f)
 
 def myNorm(a=np.array([1,2,3]),b=np.array([2,2,4])):
@@ -48,25 +70,32 @@ distortion = np.array(templates["intrinsics"]["distortion"])
 CameraMatrix = np.array(templates["intrinsics"]["K"])
 CameraMatrix = CameraMatrix.reshape((3,3))
 
+TrueCord[:,2] = TrueCord[:,2] -  0.05
 ProjectPointsFind, jacobFind = cv2.projectPoints(FindCord, rVecR, tVec,CameraMatrix, distortion)
 ProjectPointsTrue, jacobTrue = cv2.projectPoints(TrueCord, rVecR, tVec,CameraMatrix, distortion)
 
 #plt.scatter(ProjectPointsFind[:,0,0] , ProjectPointsFind[:,0,1] )
 #plt.scatter(ProjectPointsTrue[:,0,0] , ProjectPointsTrue[:,0,1] )
 
+<<<<<<< HEAD
 Norm =  np.sqrt(pow( (ProjectPointsFind[:,0,0] - ProjectPointsTrue[:,0,0]), 2) + pow( (ProjectPointsFind[:,0,1] - ProjectPointsTrue[:,0,1]), 2))
 
 print ("Statistics mean:  ", statistics.mean(Norm), " error in px " ) 
 Sigma = statistics.stdev(Norm)
+=======
+#Norm =  (pow( (ProjectPointsFind[:,0,0] - ProjectPointsTrue[:,0,0]), 2) + pow( (ProjectPointsFind[:,0,1] - ProjectPointsTrue[:,0,1]), 2))
+NormX = ProjectPointsFind[:,0,0] - ProjectPointsTrue[:,0,0]
+NormY = ProjectPointsFind[:,0,1] - ProjectPointsTrue[:,0,1]
+print ("Statistics mean:  ", statistics.mean(NormX), " error in px " ) 
+Sigma = statistics.stdev(NormX)
+>>>>>>> 2eca2dc59036cd8fbed14412bf621d0ac12af7a4
 print ("Statistics stdev:  ", Sigma, " error in px" )
-print (Norm)
+print (NormX)
 
 
 
 
-
-
-plt.hist(Norm, bins = 10, alpha = 0.75, color = 'blue', label = 'Norm2')
+plt.hist(NormX, bins = 20, alpha = 0.75, color = 'blue', label = 'Norm2')
 #print(  ProjectPointsFind - ProjectPointsTrue)
 plt.show()
 cv2.waitKey(0)
