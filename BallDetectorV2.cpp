@@ -349,7 +349,9 @@ int main(int argc, char* argv[])
     cv::Matx<double, 3, 3> cameraMatrix(tempVerb1.data()); // initialize from plain array
     std::vector<double> tempVerb2 = intrinsics["distortion"];
     cv::Vec<double, 5> distCoeffs(tempVerb2.data());
-    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
+    //Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
+    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\dataFromRealCamera\\test\\ColorCut1234c2.png", 1);
+    
     if (pts.rows == 0 || pts.cols == 0) {
         cout << "Color example Not Found not found" << endl;
         return 0;
@@ -367,12 +369,14 @@ int main(int argc, char* argv[])
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
 
-    for (int cikle = 0; cikle < 50; ++cikle) {
-        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\" + to_string(cikle) + ".png", 1);
+    for (int cikle = 0; cikle < 1; ++cikle) {
+        //Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\" + to_string(cikle) + ".png", 1);
+        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\dataFromRealCamera\\test\\2.bmp", 1);
+
         //Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\45.png", 1);
 
-        //erode(img, img, Mat(), Point(-1, -1), 5);
-        //dilate(img, img, Mat(), Point(-1, -1), 5);
+        erode(img, img, Mat(), Point(-1, -1), 5);
+        dilate(img, img, Mat(), Point(-1, -1), 5);
         if (img.rows == 0 || img.cols == 0) {
             cout << "Picture not found" << endl;
             return 0;
@@ -385,9 +389,9 @@ int main(int argc, char* argv[])
             return 0;
         }
         Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-        //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 20, 255, cv::THRESH_BINARY_INV);
+        erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+        dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+        cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
         imwrite("Gray.png", Gray_mask);
         imwrite("Bin.png", BinaryMask);
         vector < vector<Point> > gradcv;

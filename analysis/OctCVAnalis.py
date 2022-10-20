@@ -8,9 +8,11 @@ import json
 import matplotlib.pyplot as plt
 import statistics
 
+from pip import main
+
 def Otnos_path():
     dirname = os.path.dirname(__file__)
-    path = "D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog.txt"
+    path = "C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/BallDetectorLog.txt"
     start = dirname
     relative_path = os.path.relpath(path, start)
     print(relative_path)
@@ -27,13 +29,13 @@ def DeleteTrash(pathTxtFile):
     with open (pathTxtFile, 'w') as f:
         f.write(new_data)
 
-DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMove50.txt")
-FindCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/BallDetectorLog3DMove50.txt")
+DeleteTrash("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/BallDetectorLog3DMove50.txt")
+FindCord = np.loadtxt("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/BallDetectorLog3DMove50.txt")
 
-DeleteTrash("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
-TrueCord = np.loadtxt("D:/Sirius/FolderForBallDetector/OctBall/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
+DeleteTrash("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
+TrueCord = np.loadtxt("C:/Users/Student/DenisV/kurs/Oct2/BallDetector/analysis/LogBlenderCoord3DMove50.txt")
 
-with open('D:/Sirius/FolderForBallDetector/OctBall/BallDetector/CameraParametrs.json') as f:
+with open('C:/Users/Student/DenisV/kurs/Oct2/BallDetector/CameraParametrs.json') as f:
     templates = json.load(f)
 
 def myNorm(a=np.array([1,2,3]),b=np.array([2,2,4])):
@@ -52,7 +54,7 @@ ProjectPointsTrue, jacobTrue = cv2.projectPoints(TrueCord, rVecR, tVec,CameraMat
 #plt.scatter(ProjectPointsFind[:,0,0] , ProjectPointsFind[:,0,1] )
 #plt.scatter(ProjectPointsTrue[:,0,0] , ProjectPointsTrue[:,0,1] )
 
-Norm =  (pow( (ProjectPointsFind[:,0,0] - ProjectPointsTrue[:,0,0]), 2) + pow( (ProjectPointsFind[:,0,1] - ProjectPointsTrue[:,0,1]), 2))
+Norm =  np.sqrt(pow( (ProjectPointsFind[:,0,0] - ProjectPointsTrue[:,0,0]), 2) + pow( (ProjectPointsFind[:,0,1] - ProjectPointsTrue[:,0,1]), 2))
 
 print ("Statistics mean:  ", statistics.mean(Norm), " error in px " ) 
 Sigma = statistics.stdev(Norm)
@@ -69,8 +71,8 @@ plt.hist(Norm, bins = 10, alpha = 0.75, color = 'blue', label = 'Norm2')
 plt.show()
 cv2.waitKey(0)
 
-
-
+if __name__=="__main__":
+    Otnos_path()
 
 
 
