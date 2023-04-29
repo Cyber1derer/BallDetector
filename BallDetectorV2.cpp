@@ -1,5 +1,5 @@
 ﻿// BallDetectorV2.cpp: определяет точку входа для приложения.
-//
+
 #include <fstream>
 #include <iostream>
 #include <cmath>
@@ -285,7 +285,8 @@ void inPoint(float* plane, vector<Point3f>& ptr, vector<Point3f>& inptr, float& 
     }
 }
 
-void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, float* plane, float& k) { // Input va and plant
+void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, float* plane, float& k) { // Input va and plant   inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
+
     for (int i = 0; i < MyCord.size(); ++i)
     {
         if (upPlane(plane, k, MyCord[i]) <= 0 && downPlane(plane, k, MyCord[i]) >= 0)
@@ -301,7 +302,6 @@ void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, f
             img.at<Vec3b>(PixCord[i])[2] = 0;
         }
     }
-    //imshow("Obvodka", img);
     //imwrite("gran.bmp", img);
 }
 void BallPixSize(vector<Point2f> grad) {
@@ -323,7 +323,7 @@ void BallPixSize(vector<Point2f> grad) {
             minY = grad[i].y;
         }
     }
-    cout << "razmery  " << minX << "x" << maxX << "  " << minY << "x" << maxY << endl;
+    cout << "Size  " << minX << "x" << maxX << "  " << minY << "x" << maxY << endl;
     cout << ((maxX - minX) + (maxY - minY)) / 2 << endl;
 }
 float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
@@ -334,11 +334,107 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     }
     return SumErr;
 }
+vector<Point2f> contr(Mat img, bool& ROI, Point2i& pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0) {
 
+    int ny = img.rows;
+    int nx = img.cols;
+    int offsetx = 0;
+    int offsety = 0;
+    Mat origImage;
+
+    if (ROI) {
+        if (pxCenterBall.x - 200 < 0) {
+            offsetx = 200 - pxCenterBall.x;
+            pxCenterBall.x = 0;
+        }
+        if (pxCenterBall.x + 200 >= nx) {
+            pxCenterBall.x = nx - 400;
+            offsetx = -400;
+        }
+        if (pxCenterBall.y - 200 < 0) {
+            pxCenterBall.y = 0;
+            offsety = 200 - pxCenterBall.y;
+        }
+        if (pxCenterBall.y + 200 >= ny) {
+            pxCenterBall.y = ny - 400;
+            offsety = -400;
+        }
+        cv::Rect roi((pxCenterBall.x - 200), (pxCenterBall.y - 200), 400, 400);
+
+        img.copyTo(origImage);
+
+        img = origImage(roi);
+
+        ny = img.rows;
+        nx = img.cols;
+    }
+    erode(img, img, Mat(), Point(-1, -1), 5);
+    dilate(img, img, Mat(), Point(-1, -1), 5);
+
+
+    Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
+    Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
+    erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+    dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+
+    cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
+    //imwrite("Disp.png", BinaryMask);
+
+    //imwrite("Gray.png", Gray_mask);
+    // imwrite("Bin.png", BinaryMask);
+    vector < vector<Point> > gradcv;
+    //cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
+    cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    cout << "gradcv size: " << gradcv.size() << endl;
+
+    if (gradcv.size() == 0) {
+        cout << "Object (edge) do not detected. " << endl;
+        if (ROI) {
+            cout << "Try search on full image..... " << endl;
+            ROI = false;
+            return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0);
+        }
+        cout << "Never - _ - " << endl;
+        exit(0);
+    }
+    vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+    if (ROI) {
+        //check edge crop
+        for (int k = 0; k < gradcvConv.size(); ++k) {
+            if (gradcvConv[k].x == 0 || gradcvConv[k].y == 0 || gradcvConv[k].x == 400|| gradcvConv[k].y == 400)
+            {
+                cout << "Crop image crop ball. Move window... " << endl;
+                ROI = false;
+                return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0);
+                //ToDo move window
+            }
+        }
+        for (int N = 0; N < gradcvConv.size(); ++N) { // return to global px cord
+            gradcvConv[N].x += offsetx + (pxCenterBall.x - 200);
+            gradcvConv[N].y += offsety + (pxCenterBall.y - 200);
+        }
+    }
+
+
+    ROI = true;
+    cv :: imshow("Crop window", img);
+    return gradcvConv;
+}
 int main(int argc, char* argv[])
 {
-    //cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
+    namedWindow("Source window", WINDOW_NORMAL);
+    resizeWindow("Source window", 1280, 720);
 
+    //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\vid.avi");
+    /*VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
+    if (!cap.isOpened()) {
+        cout << "Error opening video stream or file" << endl;
+        return -1;
+    }
+    */
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
+    bool ROI = false;
+    vector<Point2i> pxCenterBall;
     long int timer1 = getTickCount();
     //read json file
     std::ifstream file("../../../CameraParametrs.json");
@@ -350,59 +446,45 @@ int main(int argc, char* argv[])
         //std::cout << i << " ";
     //}
 
-    cv::Matx<double, 3, 3> cameraMatrix(tempVerb1.data()); // initialize from plain array
-    std::vector<double> tempVerb2 = intrinsics["distortion"];
-    cv::Vec<double, 5> distCoeffs(tempVerb2.data());
+    //cv::Matx<double, 3, 3> cameraMatrix(tempVerb1.data()); // initialize from plain array
+    //std::vector<double> tempVerb2 = intrinsics["distortion"];
+    //cv::Vec<double, 5> distCoeffs(tempVerb2.data());
     //Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
-    Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\dataFromRealCamera\\test\\ColorCut1234c2.png", 1);
-    
-    if (pts.rows == 0 || pts.cols == 0) {
+    Mat ColorPoints = imread("..\\..\\..\\..\\BallDetectorData\\Color.png", 1);
+    if (ColorPoints.rows == 0 || ColorPoints.cols == 0) {
         cout << "Color example Not Found not found" << endl;
         return 0;
     }
     Scalar p0;
     Mat v(1, 3, CV_64F);
     double t1, t2, R;
-    constructColorFilter(pts, v, p0, t1, t2, R); 
+    // ToDo Check how it works erode-dilate. 
+    // Warning!!! Bad results with erode-delate
+    //erode(ColorPoints, ColorPoints, Mat(), Point(-1, -1), 5);
+    //dilate(ColorPoints, ColorPoints, Mat(), Point(-1, -1), 5);
+    constructColorFilter(ColorPoints, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
 
-    //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
-    //vector<float> distCoeffs = { 0,0,0,0 };
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
+    vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1);
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
 
-    for (int cikle = 0; cikle < 50; ++cikle) {
-        Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveWhitsFocusXMinus\\" + to_string(cikle) + ".png", 1);
-        //Mat img = imread("..\\..\\..\\..\\BallDetectorData\\3DMoveData\\45.png", 1);
-
-        erode(img, img, Mat(), Point(-1, -1), 5);
-        dilate(img, img, Mat(), Point(-1, -1), 5);
-        if (img.rows == 0 || img.cols == 0) {
+    for (int cikle = 0; cikle < 7; ++cikle) {
+        cout << " Image #" << cikle << endl;
+        Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
+        //Mat sourceImage;
+        //cap >> sourceImage;
+        if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found" << endl;
             return 0;
         }
-        int ny = img.rows;
-        int nx = img.cols;
-        Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
-        if (Gray_mask.rows == 0 || Gray_mask.cols == 0) {
-            cout << "Object not found on the picture" << endl;
-            return 0;
-        }
-        Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-        erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
-        imwrite("Gray.png", Gray_mask);
-        imwrite("Bin.png", BinaryMask);
-        vector < vector<Point> > gradcv;
-        //cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
-        cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-        vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
 
+        vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), v, t1,t2,R, p0);
         //BallPixSize(gradcvConv);
-        drawContours(img, gradcv, -1, (0, 255, 255), 1);
+        //drawContours(sourceImage, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
         cv::undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
         vector <Point3f> a;
@@ -417,7 +499,7 @@ int main(int argc, char* argv[])
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
-        inPointPaint(v_norm, gradcvConv, img, max_plane, k);
+        inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
         //writer(iva_norm);
         //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
         //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
@@ -437,45 +519,100 @@ int main(int argc, char* argv[])
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];
         ballCoordinates.y = (distans / normaNormali) * max_plane[1];
         ballCoordinates.z = (distans / normaNormali) * max_plane[2];
-        cout << " Image #" << cikle << endl;
+
+        //pxCenterBall.push_back()
         cout << "result = " << ballCoordinates << endl;
         //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
-     /*   //projection true coordinate 
-        vector<cv::Point2f> ProjectPointsTrue;
-        vector<cv::Point3f> TrueCoord;
-        TrueCoord.push_back(Point3f(-0.38380610942840576, -2.6863811016082764, 27.884613037109375));
-        cv::Mat T(3, 1, CV_64F, Scalar(0)); // translation vector
 
-        cv::projectPoints(TrueCoord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsTrue);
-        cout << "ProjectPoints True coordinate:    " << ProjectPointsTrue[0] << endl;
-        ProjectPointsTrue[0].x = round(ProjectPointsTrue[0].x);
-        ProjectPointsTrue[0].y = round(ProjectPointsTrue[0].y);
-
-        img.at<Vec3b>(ProjectPointsTrue[0])[2] = 0;  //sea color
-        img.at<Vec3b>(ProjectPointsTrue[0]) [0] = 255;
-        img.at<Vec3b>(ProjectPointsTrue[0])[1] = 255;
-
-        //projection find coordinate 
-        vector<cv::Point3f> FindCord;
         vector<cv::Point2f> ProjectPointsFind;
-
+        Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0);
         cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
-        cout << "ProjectPoints find coordinate:    " << ProjectPointsFind[0] << endl;
-        ProjectPointsFind[0].x = round(ProjectPointsFind[0].x);
-        ProjectPointsFind[0].y = round(ProjectPointsFind[0].y);
+        ProjectPointsFind[cikle].x = round(ProjectPointsFind[cikle].x);
+        ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
+        pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
+        //projection true coordinate
+        //vector<cv::Point2f> ProjectPointsTrue;
+        //vector<cv::Point3f> TrueCoord;
+        //TrueCoord.push_back(Point3f(-0.38380610942840576, -2.6863811016082764, 27.884613037109375));
+        //cv::Mat T(3, 1, CV_64F, Scalar(0)); // translation vector
 
-        img.at<Vec3b>(ProjectPointsFind[0])[2] = 255; // yellow color
-        img.at<Vec3b>(ProjectPointsFind[0])[0] = 0;
-        img.at<Vec3b>(ProjectPointsFind[0])[1] = 255;
+        //cv::projectPoints(TrueCoord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsTrue);
+        //cout << "ProjectPoints True coordinate:    " << ProjectPointsTrue[0] << endl;
+        //ProjectPointsTrue[0].x = round(ProjectPointsTrue[0].x);
+        //ProjectPointsTrue[0].y = round(ProjectPointsTrue[0].y);
+
+        sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //sea color
+        sourceImage.at<Vec3b>(pxCenterBall.back()) [0] = 255;
+        sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
 
 
-       
 
+        //projection find coordinate
+        //vector<cv::Point3f> FindCord;
+        //vector<cv::Point2f> ProjectPointsFind;
 
-        */
-    }    
+        //cv::projectPoints(resultsCord, rvecR, 0, cameraMatrix, distCoeffs, ProjectPointsFind);
+        //cout << "ProjectPoints find coordinate:    " << ProjectPointsFind[0] << endl;
+        //ProjectPointsFind[0].x = round(ProjectPointsFind[0].x);
+        //ProjectPointsFind[0].y = round(ProjectPointsFind[0].y);
+        //pxCenterBall.push_back(Point2i(ProjectPointsFind[0].x, ProjectPointsFind[0].y))
+        //img.at<Vec3b>(ProjectPointsFind[0])[2] = 255; // yellow color
+        //img.at<Vec3b>(ProjectPointsFind[0])[0] = 0;
+        //img.at<Vec3b>(ProjectPointsFind[0])[1] = 255;
+        //imwrite("sourceImage.png", sourceImage);
+
+        //if 
+       // cv::line(sourceImage, );
+        imshow("Source window", sourceImage);
+
+        char c = (char)cv::waitKey(1);
+        if (c == 27)
+            break;
+            
+  
+    }
     writer(resultsCord);
+    cout << "ProjectPoints: " << pxCenterBall << endl;
+
+
+    //FromBlender
+     //v = np.array([7.0, 8.0, 0.0])  # initial velocity m / s
+     // a =  np.array([0,-g,0])
+     // dt = 0.2
+    //Compute acceleration
+
+
+
+
+
+ /*
+    float dt = 0.2;
+    vector<Point3f> velocity;
+    for (int i = 0; i < resultsCord.size()-1; ++i) {
+        velocity.push_back((resultsCord[i+1] - resultsCord[i]) / dt);
+    }
+    cout << "Celocity: " << velocity << endl;
+
+    vector<Point3f> accelerations;
+    for (int i = 0; i < velocity.size()-1; ++i) {
+        accelerations.push_back((velocity[i+1] - velocity[i]) / dt);
+    }
+    cout << "Acceleration: " << accelerations << endl;
+
+
+    */
+
+
+
+
+
+
+
+
+
+
+
     // 
     // 
     //get verb from json
