@@ -435,6 +435,10 @@ int main(int argc, char* argv[])
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     bool ROI = false;
     vector<Point2i> pxCenterBall;
+    vector<Point3f> velocity;
+    vector<Point3f> accelerations;
+
+    pxCenterBall.push_back(Point2i(0, 0));
     long int timer1 = getTickCount();
     //read json file
     std::ifstream file("../../../CameraParametrs.json");
@@ -527,6 +531,7 @@ int main(int argc, char* argv[])
 
         vector<cv::Point2f> ProjectPointsFind;
         Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0);
+        
         cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
         ProjectPointsFind[cikle].x = round(ProjectPointsFind[cikle].x);
         ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
@@ -547,7 +552,6 @@ int main(int argc, char* argv[])
         sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
 
 
-
         //projection find coordinate
         //vector<cv::Point3f> FindCord;
         //vector<cv::Point2f> ProjectPointsFind;
@@ -564,6 +568,19 @@ int main(int argc, char* argv[])
 
         //if 
        // cv::line(sourceImage, );
+
+        //draw trajectori
+        for (int k = 1; k <= cikle; ++k) {
+            cv::line(sourceImage, pxCenterBall[k], pxCenterBall[k + 1],(0,0,0), 3);
+        }
+
+        //predict
+        if (resultsCord.size()>1){
+            velocity.push_back(resultsCord[circle] - resultsCord[circle-1])
+        }
+
+
+
         imshow("Source window", sourceImage);
 
         char c = (char)cv::waitKey(1);
@@ -592,7 +609,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < resultsCord.size()-1; ++i) {
         velocity.push_back((resultsCord[i+1] - resultsCord[i]) / dt);
     }
-    cout << "Celocity: " << velocity << endl;
+    cout << "Velocity: " << velocity << endl;
 
     vector<Point3f> accelerations;
     for (int i = 0; i < velocity.size()-1; ++i) {
