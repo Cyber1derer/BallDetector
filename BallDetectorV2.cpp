@@ -472,7 +472,9 @@ int main(int argc, char* argv[])
     Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
-    Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1);
+    Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
+    Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0); //Transpose matrix
+
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
 
@@ -529,13 +531,16 @@ int main(int argc, char* argv[])
         //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
 
+
+
+        // Find px center ball ------------------------------------------------------------------------------------------------------------
         vector<cv::Point2f> ProjectPointsFind;
-        Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0);
-        
         cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
         ProjectPointsFind[cikle].x = round(ProjectPointsFind[cikle].x);
         ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
         pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
+        //----------------------------------------------------------------------------------------------------------------------------------
+        // 
         //projection true coordinate
         //vector<cv::Point2f> ProjectPointsTrue;
         //vector<cv::Point3f> TrueCoord;
@@ -547,6 +552,7 @@ int main(int argc, char* argv[])
         //ProjectPointsTrue[0].x = round(ProjectPointsTrue[0].x);
         //ProjectPointsTrue[0].y = round(ProjectPointsTrue[0].y);
 
+        
         sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //sea color
         sourceImage.at<Vec3b>(pxCenterBall.back()) [0] = 255;
         sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
@@ -576,7 +582,7 @@ int main(int argc, char* argv[])
 
         //predict
         if (resultsCord.size()>1){
-            velocity.push_back(resultsCord[circle] - resultsCord[circle-1])
+            velocity.push_back(resultsCord[cikle] - resultsCord[cikle - 1]);
         }
 
 
