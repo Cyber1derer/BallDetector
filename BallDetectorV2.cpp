@@ -334,7 +334,7 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     }
     return SumErr;
 }
-vector<Point2f> contr(Mat img, bool& ROI, Point2i& pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0) {
+vector<Point2f> contr(Mat img, bool& ROI, Point2i& const pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0, int& const cropSize) {
 
     int ny = img.rows;
     int nx = img.cols;
@@ -343,31 +343,41 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i& pxCenterBall, Mat& const v, d
     Mat origImage;
 
     if (ROI) {
-        if (pxCenterBall.x - 200 < 0) {
-            offsetx = 200 - pxCenterBall.x;
+
+        //------------------ check range out crop
+        if (pxCenterBall.x - cropSize/2 < 0) {
+            offsetx = cropSize/2 - pxCenterBall.x;
             pxCenterBall.x = 0;
+            cout << " Yes we check " << endl;
+
         }
-        if (pxCenterBall.x + 200 >= nx) {
-            pxCenterBall.x = nx - 400;
-            offsetx = -400;
+        if (pxCenterBall.x + cropSize/2 >= nx) {
+            pxCenterBall.x = nx - cropSize/2;
+            offsetx = - cropSize;
+            cout << " Yes we check " << endl;
+
         }
-        if (pxCenterBall.y - 200 < 0) {
+        if (pxCenterBall.y - cropSize/2 < 0) {
             pxCenterBall.y = 0;
-            offsety = 200 - pxCenterBall.y;
+            offsety = cropSize/2 - pxCenterBall.y;
+            cout << " Yes we check " << endl;
+
         }
-        if (pxCenterBall.y + 200 >= ny) {
-            pxCenterBall.y = ny - 400;
-            offsety = -400;
+        if (pxCenterBall.y + cropSize/2 >= ny) {
+            pxCenterBall.y = ny - cropSize/2;
+            offsety = -cropSize;
+            cout << " Yes we check " << endl;
         }
-        cv::Rect roi((pxCenterBall.x - 200), (pxCenterBall.y - 200), 400, 400);
+        //------------------------------
+        cv::Rect roi((pxCenterBall.x - cropSize/2), (pxCenterBall.y - cropSize/2), cropSize, cropSize);
 
         img.copyTo(origImage);
-
         img = origImage(roi);
 
         ny = img.rows;
         nx = img.cols;
     }
+
     erode(img, img, Mat(), Point(-1, -1), 5);
     dilate(img, img, Mat(), Point(-1, -1), 5);
 
@@ -392,7 +402,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i& pxCenterBall, Mat& const v, d
         if (ROI) {
             cout << "Try search on full image..... " << endl;
             ROI = false;
-            return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0);
+            return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0, cropSize);
         }
         cout << "Never - _ - " << endl;
         exit(0);
@@ -401,17 +411,18 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i& pxCenterBall, Mat& const v, d
     if (ROI) {
         //check edge crop
         for (int k = 0; k < gradcvConv.size(); ++k) {
-            if (gradcvConv[k].x == 0 || gradcvConv[k].y == 0 || gradcvConv[k].x == 400|| gradcvConv[k].y == 400)
+            if (gradcvConv[k].x == 0 || gradcvConv[k].y == 0 || gradcvConv[k].x == 399|| gradcvConv[k].y == 399)
             {
-                cout << "Crop image crop ball. Move window... " << endl;
+                cout << "Crop image crop ball. Move window...Or find all range " << endl;
                 ROI = false;
-                return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0);
+                return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0, cropSize);
                 //ToDo move window
             }
         }
+
         for (int N = 0; N < gradcvConv.size(); ++N) { // return to global px cord
-            gradcvConv[N].x += offsetx + (pxCenterBall.x - 200);
-            gradcvConv[N].y += offsety + (pxCenterBall.y - 200);
+            gradcvConv[N].x += offsetx + (pxCenterBall.x - cropSize/2);
+            gradcvConv[N].y += offsety + (pxCenterBall.y - cropSize/2);
         }
     }
 
@@ -425,20 +436,26 @@ int main(int argc, char* argv[])
     namedWindow("Source window", WINDOW_NORMAL);
     resizeWindow("Source window", 1280, 720);
 
+    namedWindow("Crop window", WINDOW_NORMAL);
+    resizeWindow("Crop window", 1280, 720);
+
+
     //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\vid.avi");
-    /*VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
     }
-    */
+    
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     bool ROI = false;
+    int cropSize = 400;
+
     vector<Point2i> pxCenterBall;
     vector<Point3f> velocity;
     vector<Point3f> accelerations;
 
-    pxCenterBall.push_back(Point2i(0, 0));
+    pxCenterBall.push_back(Point2i(200, 200));
     long int timer1 = getTickCount();
     //read json file
     std::ifstream file("../../../CameraParametrs.json");
@@ -477,18 +494,18 @@ int main(int argc, char* argv[])
 
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
+    Mat sourceImage;
 
-    for (int cikle = 0; cikle < 7; ++cikle) {
+    for (int cikle = 0; cikle < 2; ++cikle) {
         cout << " Image #" << cikle << endl;
-        Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
+        //Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
         //Mat sourceImage;
-        //cap >> sourceImage;
+        cap >> sourceImage;
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found" << endl;
             return 0;
         }
-
-        vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), v, t1,t2,R, p0);
+        vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), v, t1,t2,R, p0,cropSize);
         //BallPixSize(gradcvConv);
         //drawContours(sourceImage, gradcv, -1, (0, 255, 255), 1);
         vector<Point2f> grad2;
@@ -553,7 +570,7 @@ int main(int argc, char* argv[])
         //ProjectPointsTrue[0].y = round(ProjectPointsTrue[0].y);
 
         
-        sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //sea color
+        sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //some color
         sourceImage.at<Vec3b>(pxCenterBall.back()) [0] = 255;
         sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
 
@@ -592,8 +609,8 @@ int main(int argc, char* argv[])
         char c = (char)cv::waitKey(1);
         if (c == 27)
             break;
-            
-  
+        cout << endl; 
+        cv::waitKey(0);
     }
     writer(resultsCord);
     cout << "ProjectPoints: " << pxCenterBall << endl;
