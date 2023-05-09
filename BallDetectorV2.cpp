@@ -334,41 +334,35 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     }
     return SumErr;
 }
-vector<Point2f> contr(Mat img, bool& ROI, Point2i& const pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0, int& const cropSize) {
+vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0, int& const cropSize) {
 
     int ny = img.rows;
     int nx = img.cols;
-    int offsetx = 0;
-    int offsety = 0;
+    int offsetX = 0;
+    int offsetY = 0;
     Mat origImage;
 
     if (ROI) {
 
-        //------------------ check range out crop
-        if (pxCenterBall.x - cropSize/2 < 0) {
-            offsetx = cropSize/2 - pxCenterBall.x;
-            pxCenterBall.x = 0;
+        //------------------ check range out rect-crop
+        if (pxCenterBall.x - cropSize/2 < 0) { 
+            pxCenterBall.x += pxCenterBall.x + (cropSize / 2 - pxCenterBall.x);
             cout << " Yes we check " << endl;
-
         }
         if (pxCenterBall.x + cropSize/2 >= nx) {
-            pxCenterBall.x = nx - cropSize/2;
-            offsetx = - cropSize;
+            pxCenterBall.x += (nx - cropSize / 2) - pxCenterBall.x;
             cout << " Yes we check " << endl;
-
         }
         if (pxCenterBall.y - cropSize/2 < 0) {
-            pxCenterBall.y = 0;
-            offsety = cropSize/2 - pxCenterBall.y;
+            pxCenterBall.y += pxCenterBall.y + (cropSize / 2 - pxCenterBall.y);
             cout << " Yes we check " << endl;
-
         }
         if (pxCenterBall.y + cropSize/2 >= ny) {
-            pxCenterBall.y = ny - cropSize/2;
-            offsety = -cropSize;
+            pxCenterBall.y +=  (ny - cropSize / 2) - pxCenterBall.y ;
             cout << " Yes we check " << endl;
         }
         //------------------------------
+
         cv::Rect roi((pxCenterBall.x - cropSize/2), (pxCenterBall.y - cropSize/2), cropSize, cropSize);
 
         img.copyTo(origImage);
@@ -421,8 +415,8 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i& const pxCenterBall, Mat& cons
         }
 
         for (int N = 0; N < gradcvConv.size(); ++N) { // return to global px cord
-            gradcvConv[N].x += offsetx + (pxCenterBall.x - cropSize/2);
-            gradcvConv[N].y += offsety + (pxCenterBall.y - cropSize/2);
+            gradcvConv[N].x +=  (pxCenterBall.x - cropSize/2);
+            gradcvConv[N].y +=  (pxCenterBall.y - cropSize/2) ;
         }
     }
 
@@ -449,7 +443,7 @@ int main(int argc, char* argv[])
     
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     bool ROI = false;
-    int cropSize = 400;
+    int cropSize = 400; //Only even number 
 
     vector<Point2i> pxCenterBall;
     vector<Point3f> velocity;
@@ -496,7 +490,7 @@ int main(int argc, char* argv[])
     cv::Rodrigues(Rx, rvecR);
     Mat sourceImage;
 
-    for (int cikle = 0; cikle < 2; ++cikle) {
+    for (int cikle = 0; cikle < 32; ++cikle) {
         cout << " Image #" << cikle << endl;
         //Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
         //Mat sourceImage;
@@ -573,7 +567,7 @@ int main(int argc, char* argv[])
         sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //some color
         sourceImage.at<Vec3b>(pxCenterBall.back()) [0] = 255;
         sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
-
+        circle(sourceImage, pxCenterBall.back(), 4, (200, 80, 200), -1);
 
         //projection find coordinate
         //vector<cv::Point3f> FindCord;
@@ -602,7 +596,9 @@ int main(int argc, char* argv[])
             velocity.push_back(resultsCord[cikle] - resultsCord[cikle - 1]);
         }
 
-
+        if (velocity.size() > 1) {
+            accelerations.push_back(velocity.back() - *(velocity.end() - 2));
+        }
 
         imshow("Source window", sourceImage);
 
@@ -614,7 +610,8 @@ int main(int argc, char* argv[])
     }
     writer(resultsCord);
     cout << "ProjectPoints: " << pxCenterBall << endl;
-
+    cout << "----------- velocity --------------- " << endl << velocity << endl << "------------------" << endl;
+    cout << "----------- accelerations --------------- " << endl << accelerations << endl << "------------------" << endl;
 
     //FromBlender
      //v = np.array([7.0, 8.0, 0.0])  # initial velocity m / s
