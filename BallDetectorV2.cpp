@@ -103,7 +103,7 @@ void writer(vector<Point2f>& text) {
 }
 void writer(vector<Point3f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("D:\\Sirius\\BallDetectorV2\\UndistortHome.txt"); // окрываем файл для записи
+    out.open("C:\\testFolderDEleteThisLaterItAllForBlender"); // окрываем файл для записи
     //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
     if (out.is_open())
     {
@@ -303,7 +303,7 @@ int main(int argc, char* argv[])
     //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallMoveExperement1_2.bmp", 1);
     //Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallWithLightRightCut.bmp", 1);
 
-    Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\ColorCut.bmp", 1);
+    Mat pts = imread("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\Color.png", 1);
     if (pts.rows == 0 || pts.cols == 0) {
         cout << "Color example Not Found not found" << endl;
         return 0;
@@ -313,10 +313,21 @@ int main(int argc, char* argv[])
     double t1, t2, R;
     constructColorFilter(pts, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
-    for (int cikle = 0; cikle < 10; ++cikle) {
-        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
-        Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\5.bmp", 1);
+        
+    //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\vid.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
+    if (!cap.isOpened()) {
+        cout << "Error opening video stream or file" << endl;
+        return -1;
+    }
 
+    Mat img;
+    float RadiusBall = 1.0;
+
+    for (int cikle = 0; cikle < 32; ++cikle) {
+        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
+        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\5.bmp", 1);
+        cap >> img;
         //erode(img, img, Mat(), Point(-1, -1), 5);
         //dilate(img, img, Mat(), Point(-1, -1), 5);
         if (img.rows == 0 || img.cols == 0) {
@@ -376,7 +387,6 @@ int main(int argc, char* argv[])
         }
         theta = 2 * (sumarc / iva_norm.size());
         //cout << "theta = " << theta << endl;
-        float RadiusBall = 0.15000;
         double distans = RadiusBall / (sin(theta / 2));
         Point3f ballCoordinates;
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];
@@ -387,7 +397,7 @@ int main(int argc, char* argv[])
         //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
     }
-    //writer(resultsCord);
+    writer(resultsCord);
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
     cout << "Programm complete " << finalTime << " sec" << endl;
