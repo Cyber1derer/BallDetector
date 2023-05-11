@@ -372,14 +372,16 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, Mat& const v, do
         nx = img.cols;
     }
 
-    erode(img, img, Mat(), Point(-1, -1), 5);
-    dilate(img, img, Mat(), Point(-1, -1), 5);
+    //erode(img, img, Mat(), Point(-1, -1), 5);
+    //dilate(img, img, Mat(), Point(-1, -1), 5);
 
 
     Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
+    //imshow("Gray_Mask", Gray_mask);
     Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-    erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-    dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+
+    //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
+    //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
 
     cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
     //imwrite("Disp.png", BinaryMask);
@@ -435,7 +437,7 @@ int main(int argc, char* argv[])
 
 
     //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\vid.avi");
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video48Cycles.avi");
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
@@ -465,7 +467,7 @@ int main(int argc, char* argv[])
     //std::vector<double> tempVerb2 = intrinsics["distortion"];
     //cv::Vec<double, 5> distCoeffs(tempVerb2.data());
     //Mat pts = imread("..\\..\\..\\..\\BallDetectorData\\2DMoveData\\ColorCut.bmp", 1);
-    Mat ColorPoints = imread("..\\..\\..\\..\\BallDetectorData\\Color.png", 1);
+    Mat ColorPoints = imread("..\\..\\..\\..\\BallDetectorData\\ColorCycles.bmp", 1);
     if (ColorPoints.rows == 0 || ColorPoints.cols == 0) {
         cout << "Color example Not Found not found" << endl;
         return 0;
@@ -480,17 +482,18 @@ int main(int argc, char* argv[])
     constructColorFilter(ColorPoints, v, p0, t1, t2, R); 
     vector<Point3f> resultsCord;
 
-    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
+    //Mat Rx = (Mat_<double>(3, 3) << -2.22, -1.0, 0.0, 0.0, 2.22, -1.0, 1.0, 0.0, 2.22);
     Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0); //Transpose matrix
 
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
     Mat sourceImage;
 
-    for (int cikle = 0; cikle < 32; ++cikle) {
+    for (int cikle = 0; cikle < 49; ++cikle) {
         cout << " Image #" << cikle << endl;
         //Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
         //Mat sourceImage;
@@ -516,7 +519,7 @@ int main(int argc, char* argv[])
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
-        inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
+        //inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
         //writer(iva_norm);
         //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
         //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
@@ -606,7 +609,7 @@ int main(int argc, char* argv[])
         if (c == 27)
             break;
         cout << endl; 
-        cv::waitKey(0);
+        cv::waitKey(1);
     }
     writer(resultsCord);
     cout << "ProjectPoints: " << pxCenterBall << endl;
