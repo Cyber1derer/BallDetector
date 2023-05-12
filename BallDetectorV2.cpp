@@ -450,7 +450,7 @@ int main(int argc, char* argv[])
     vector<Point2i> pxCenterBall;
     vector<Point3f> velocity;
     vector<Point3f> accelerations;
-
+    float dt=1.0/25.0;
     pxCenterBall.push_back(Point2i(200, 200));
     long int timer1 = getTickCount();
     //read json file
@@ -472,27 +472,34 @@ int main(int argc, char* argv[])
         cout << "Color example Not Found not found" << endl;
         return 0;
     }
+    //ColorFilter parametrs
     Scalar p0;
     Mat v(1, 3, CV_64F);
     double t1, t2, R;
+    //RANSAC parameters
+    float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
+    float k = 0.000008; // Distants between plane
+    float abs_counter = 0.95;
+
     // ToDo Check how it works erode-dilate. 
     // Warning!!! Bad results with erode-delate
     //erode(ColorPoints, ColorPoints, Mat(), Point(-1, -1), 5);
     //dilate(ColorPoints, ColorPoints, Mat(), Point(-1, -1), 5);
-    constructColorFilter(ColorPoints, v, p0, t1, t2, R); 
-    vector<Point3f> resultsCord;
 
+    constructColorFilter(ColorPoints, v, p0, t1, t2, R); 
+
+    //Camera parameters
     Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
     //Mat Rx = (Mat_<double>(3, 3) << -2.22, -1.0, 0.0, 0.0, 2.22, -1.0, 1.0, 0.0, 2.22);
     Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0); //Transpose matrix
-
     cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
     cv::Rodrigues(Rx, rvecR);
-    Mat sourceImage;
 
+    Mat sourceImage;
+    vector<Point3f> resultsCord;
     for (int cikle = 0; cikle < 49; ++cikle) {
         cout << " Image #" << cikle << endl;
         //Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
@@ -513,9 +520,6 @@ int main(int argc, char* argv[])
         normalizeVectors(a, v_norm);
         //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
-        float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.000008; // Distants between plane
-        float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
@@ -596,11 +600,11 @@ int main(int argc, char* argv[])
 
         //predict
         if (resultsCord.size()>1){
-            velocity.push_back(resultsCord[cikle] - resultsCord[cikle - 1]);
+            velocity.push_back( (resultsCord[cikle] - resultsCord[cikle - 1] ) / dt);
         }
 
         if (velocity.size() > 1) {
-            accelerations.push_back(velocity.back() - *(velocity.end() - 2));
+            accelerations.push_back( (velocity.back() - *(velocity.end() - 2)) / dt);
         }
 
         imshow("Source window", sourceImage);
