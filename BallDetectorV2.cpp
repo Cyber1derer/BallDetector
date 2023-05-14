@@ -345,21 +345,17 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, Mat& const v, do
     if (ROI) {
 
         //------------------ check range out rect-crop
-        if (pxCenterBall.x - cropSize/2 < 0) { 
-            pxCenterBall.x += pxCenterBall.x + (cropSize / 2 - pxCenterBall.x);
-            cout << " Yes we check " << endl;
+        if ( (pxCenterBall.x - cropSize/2)  < 0) { 
+            pxCenterBall.x = cropSize / 2;
         }
-        if (pxCenterBall.x + cropSize/2 >= nx) {
-            pxCenterBall.x += (nx - cropSize / 2) - pxCenterBall.x;
-            cout << " Yes we check " << endl;
+        if ( (pxCenterBall.x + cropSize/2)  >= nx) {
+            pxCenterBall.x = nx - cropSize / 2;
         }
-        if (pxCenterBall.y - cropSize/2 < 0) {
-            pxCenterBall.y += pxCenterBall.y + (cropSize / 2 - pxCenterBall.y);
-            cout << " Yes we check " << endl;
+        if ( (pxCenterBall.y - cropSize/2) < 0) {
+            pxCenterBall.y = cropSize / 2;
         }
-        if (pxCenterBall.y + cropSize/2 >= ny) {
-            pxCenterBall.y +=  (ny - cropSize / 2) - pxCenterBall.y ;
-            cout << " Yes we check " << endl;
+        if ( (pxCenterBall.y + cropSize/2 ) >= ny) {
+            pxCenterBall.y = ny - cropSize / 2;
         }
         //------------------------------
 
@@ -403,6 +399,15 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, Mat& const v, do
         cout << "Never - _ - " << endl;
         exit(0);
     }
+    if (gradcv.size() > 1) {
+        imwrite("Gray.png", Gray_mask);
+        imwrite("Bin.png", BinaryMask);
+        cout << "big grancv" << endl;
+        exit(0);
+        waitKey(0);
+        waitKey(0);
+    }
+
     vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
     if (ROI) {
         //check edge crop
@@ -433,13 +438,13 @@ int main(int argc, char* argv[])
     resizeWindow("Source window", 1280, 720);
 
     namedWindow("Crop window", WINDOW_NORMAL);
-    resizeWindow("Crop window", 1280, 720);
+    resizeWindow("Crop window", 720, 720);
 
 
     //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\video48Frame.avi"); 
     //VideoCapture cap("test.avi"); 
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video48Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
@@ -502,14 +507,16 @@ int main(int argc, char* argv[])
 
     Mat sourceImage;
     vector<Point3f> resultsCord;
-    for (int cikle = 0; cikle < 49; ++cikle) {
+    //for (int cikle = 0; cikle < 49; ++cikle) {
+    int cikle = 0;
+    while (true){
         cout << " Image #" << cikle << endl;
         //Mat sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\" + to_string(cikle) + ".png", 1);
         //Mat sourceImage;
         cap >> sourceImage;
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
-            cout << "Picture not found" << endl;
-            return 0;
+            cout << "Picture not found or video end" << endl;
+            break;
         }
         vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), v, t1,t2,R, p0,cropSize);
         //BallPixSize(gradcvConv);
@@ -599,7 +606,7 @@ int main(int argc, char* argv[])
         for (int k = 1; k <= cikle; ++k) {
             cv::line(sourceImage, pxCenterBall[k], pxCenterBall[k + 1],(0,0,0), 3);
         }
-
+        /*
         //predict
         if (resultsCord.size()>1){
             velocity.push_back( (resultsCord[cikle] - resultsCord[cikle - 1] ) / dt);
@@ -608,7 +615,7 @@ int main(int argc, char* argv[])
         if (velocity.size() > 1) {
             accelerations.push_back( (velocity.back() - *(velocity.end() - 2)) / dt);
         }
-
+        */
         imshow("Source window", sourceImage);
 
         char c = (char)cv::waitKey(1);
@@ -616,11 +623,12 @@ int main(int argc, char* argv[])
             break;
         cout << endl; 
         cv::waitKey(1);
+        cikle += 1;
     }
     writer(resultsCord);
     cout << "ProjectPoints: " << pxCenterBall << endl;
-    cout << "----------- velocity --------------- " << endl << velocity << endl << "------------------" << endl;
-    cout << "----------- accelerations --------------- " << endl << accelerations << endl << "------------------" << endl;
+    //cout << "----------- velocity --------------- " << endl << velocity << endl << "------------------" << endl;
+    //cout << "----------- accelerations --------------- " << endl << accelerations << endl << "------------------" << endl;
 
     //FromBlender
      //v = np.array([7.0, 8.0, 0.0])  # initial velocity m / s
