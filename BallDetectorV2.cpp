@@ -444,7 +444,7 @@ int main(int argc, char* argv[])
     //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\video48Frame.avi"); 
     //VideoCapture cap("test.avi"); 
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\exp\\video63Camera0.12.avi");
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
