@@ -1,20 +1,25 @@
 ﻿// BallDetectorV2.cpp: определяет точку входа для приложения.
-//
-
-#include "BallDetectorV2.h"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include <opencv2/imgproc.hpp> // for undestornPoint
+#include <fstream>
 #include <iostream>
 #include <cmath>
+#include <opencv2/calib3d.hpp> // Undistort and Rodrigues 
+#include <opencv2/imgproc.hpp> //FindCont
+#include <opencv2/imgcodecs.hpp> //Imread
+#include <opencv2/highgui.hpp> // Waitkey
+#include <nlohmann/json.hpp>
+#include <typeinfo>
+#include <opencv2/core/utils/logger.hpp>
 
-#include <opencv2/opencv.hpp>
 
-#include <fstream>
-
+using json = nlohmann::json; // synonim for data type nlohmann::json
 
 using namespace cv;
 using namespace std;
+#include "BallDetector.h"
+//#include "ColorFilter.h"
+
+#include <opencv2/core/utils/logger.hpp>
+
 
 void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R) // Calculates coefficients (cylinder) from the passed points of the same color (pts)
 {
@@ -92,8 +97,9 @@ Mat useColorFilter(Mat& img, Mat& v, Scalar& p0, double& t1, double& t2, double&
 
 void writer(vector<Point2f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("D:\\Sirius\\BallDetectorV2\\UndistortHome.txt"); // окрываем файл для записи
-    //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
+
+    out.open("C:\\log\\BallDetectorLogPoint2f.txt"); // окрываем файл для записи
+
     if (out.is_open())
     {
         out << text;
@@ -101,10 +107,10 @@ void writer(vector<Point2f>& text) {
 
     std::cout << "File save" << std::endl;
 }
+
 void writer(vector<Point3f>& text) {
     std::ofstream out;          // поток для записи
-    out.open("C:\\testFolderDEleteThisLaterItAllForBlender"); // окрываем файл для записи
-    //out.open("C://Users//Student//DenisV//kurs//BallDetectorV2\\Undistort.txt");
+    out.open("C:\\log\\BallDetectorLogPoint3f.txt"); // окрываем файл для записи
     if (out.is_open())
     {
         out << text;
@@ -112,11 +118,12 @@ void writer(vector<Point3f>& text) {
     std::cout << "File save" << std::endl;
 }
 
-void converter2To3(vector<Point2f>& src, vector <Point3f>& dst ) {
+void converter2To3(vector<Point2f>& src, vector <Point3f>& dst) {
     for (int i = 0; i < src.size(); ++i) {
-        dst.push_back(Point3f (src[i].x, src[i].y,1));
+        dst.push_back(Point3f(src[i].x, src[i].y, 1));
     }
 }
+
 void normalizeVectors(vector<Point3f>& src, vector <Point3f>& dst) {
     for (int i = 0; i < src.size(); ++i)
     {
@@ -125,9 +132,6 @@ void normalizeVectors(vector<Point3f>& src, vector <Point3f>& dst) {
         dst.push_back(vi);
     }
 }
-
-
-
 
 void makePlane(Point3f& ptr1, Point3f& ptr2, Point3f& ptr3, float* plane)
 {
@@ -172,6 +176,7 @@ void makePlane(Point3f& ptr1, Point3f& ptr2, Point3f& ptr3, float* plane)
     plane[2] = Cnorm;
     plane[3] = Dnorm;
 }
+
 float upPlane(float* plane, float& k, Point3f& ptr)
 {
     float a = plane[0];
@@ -189,6 +194,7 @@ float downPlane(float* plane, float& k, Point3f& ptr)
     float d = plane[3];
     return a * (ptr.x + k * a) + b * (ptr.y + k * b) + c * (ptr.z + k * c) + d;
 }
+
 float counterPlane(float* plane, float& k, vector<Point3f>& ptr)
 {
     int n = ptr.size();
@@ -203,6 +209,7 @@ float counterPlane(float* plane, float& k, vector<Point3f>& ptr)
     float counter = float(coun) / n;
     return counter;
 }
+
 void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_counter, int& abs_iter)
 {
     float max_counter = 0.;
@@ -218,7 +225,6 @@ void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_coun
         Point3f ptr3 = ptr[iter + n * 2 / 3];
         makePlane(ptr1, ptr2, ptr3, plane);
         counter = counterPlane(plane, k, ptr);
-        //cout << counter << endl;
         if (counter > max_counter)
         {
             max_counter = counter;
@@ -233,6 +239,35 @@ void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_coun
     cout << "iter" << iter << endl;
 }
 
+void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_counter, int& abs_iter) //With random point
+{
+    float max_counter = 0.;
+    float counter = 0.;
+    int iter = 0;
+    int n = ptr.size();
+    float plane[4];
+
+    Point3f ptr1 = rand() % n;
+
+    while (max_counter < abs_counter && iter < abs_iter)
+    {
+        Point3f ptr2 = rand() % n;
+        Point3f ptr3 = rand() % n;
+        makePlane(ptr1, ptr2, ptr3, plane);
+        counter = counterPlane(plane, k, ptr);
+        if (counter > max_counter)
+        {
+            max_counter = counter;
+            max_plane[0] = plane[0];
+            max_plane[1] = plane[1];
+            max_plane[2] = plane[2];
+            max_plane[3] = plane[3];
+        }
+        ++iter;
+    }
+    cout << "max counter" << max_counter << endl;
+    cout << "iter" << iter << endl;
+}
 
 void inPoint(float* plane, vector<Point3f>& ptr, vector<Point3f>& inptr, float& k)
 {
@@ -246,7 +281,7 @@ void inPoint(float* plane, vector<Point3f>& ptr, vector<Point3f>& inptr, float& 
     }
 }
 
-void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, float* plane, float& k) { // Input va and plant
+void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, float* plane, float& k) { // Input va and plant   inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
     for (int i = 0; i < MyCord.size(); ++i)
     {
         if (upPlane(plane, k, MyCord[i]) <= 0 && downPlane(plane, k, MyCord[i]) >= 0)
@@ -256,127 +291,178 @@ void inPointPaint(vector<Point3f>& MyCord, vector<Point2f>& PixCord, Mat& img, f
             img.at<Vec3b>(PixCord[i])[2] = 0;
         }
         else {
-             //img.at<Vec3b>(PixCord[i]) = (255,0,255,255); //int b =//int g =//int r =
             img.at<Vec3b>(PixCord[i])[0] = 255;
             img.at<Vec3b>(PixCord[i])[1] = 0;
             img.at<Vec3b>(PixCord[i])[2] = 0;
         }
     }
-    //imshow("Obvodka", img);
-    //imwrite("gran.bmp", img);
 }
-void BallPixSize(vector<Point2f> grad) {
-    int maxX = 0;
-    int minX = 2000;
-    int maxY = 0;
-    int minY = 2000;
-    for (int i = 0; i < grad.size(); ++i) {
-        if (grad[i].x > maxX) {
-            maxX = grad[i].x;
-        }
-        if (grad[i].x < minX) {
-            minX = grad[i].x;
-        }
-        if (grad[i].y > maxY) {
-            maxY = grad[i].y;
-        }
-        if (grad[i].y < minY) {
-            minY = grad[i].y;
-        }
-    }
-    cout << "razmery  " << minX << "x" << maxX << "  " << minY << "x" << maxY << endl;
-    cout << ((maxX - minX) + (maxY - minY)) / 2 << endl;
-}
+
 float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     float SumErr = 0;
     for (int i = 0; i < iva_norm.size(); ++i) {
-        SumErr += abs (max_plane[0] * iva_norm[i].x + max_plane[1] * iva_norm[i].y + max_plane[2] * iva_norm[i].z + max_plane[3]);
+        SumErr += abs(max_plane[0] * iva_norm[i].x + max_plane[1] * iva_norm[i].y + max_plane[2] * iva_norm[i].z + max_plane[3]);
         cout << SumErr << endl;
     }
     return SumErr;
+} 
+
+vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, Mat& const v, double& const t1, double& const t2, double& const R, Scalar& const p0, int& const cropSize) {
+
+    int ny = img.rows;
+    int nx = img.cols;
+    int offsetX = 0;
+    int offsetY = 0;
+    Mat origImage;
+
+    if (ROI) {
+
+        //------------------ check range out rect-crop
+        if ((pxCenterBall.x - cropSize / 2) < 0) {
+            pxCenterBall.x = cropSize / 2;
+        }
+        if ((pxCenterBall.x + cropSize / 2) >= nx) {
+            pxCenterBall.x = nx - cropSize / 2;
+        }
+        if ((pxCenterBall.y - cropSize / 2) < 0) {
+            pxCenterBall.y = cropSize / 2;
+        }
+        if ((pxCenterBall.y + cropSize / 2) >= ny) {
+            pxCenterBall.y = ny - cropSize / 2;
+        }
+        //------------------------------
+
+        cv::Rect roi((pxCenterBall.x - cropSize / 2), (pxCenterBall.y - cropSize / 2), cropSize, cropSize);
+
+        img.copyTo(origImage);
+        img = origImage(roi);
+
+        ny = img.rows;
+        nx = img.cols;
+    }
+
+    Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
+    Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
+
+    cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
+
+    vector < vector<Point> > gradcv;
+    cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    cout << "gradcv size: " << gradcv.size() << endl;
+
+    if (gradcv.size() == 0) {
+        cout << "Object (edge) do not detected. " << endl;
+        if (ROI) {
+            cout << "Try search on full image..... " << endl;
+            ROI = false;
+            return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0, cropSize);
+        }
+        cout << "Never - _ - " << endl;
+        exit(0);
+    }
+    if (gradcv.size() > 1) {
+        imwrite("Gray.png", Gray_mask);
+        imwrite("Bin.png", BinaryMask);
+        cout << "big grancv" << endl;
+        exit(0);
+        waitKey(0);
+        waitKey(0);
+    }
+
+    vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+    if (ROI) {
+        //check edge crop
+        for (int k = 0; k < gradcvConv.size(); ++k) {
+            if (gradcvConv[k].x == 0 || gradcvConv[k].y == 0 || gradcvConv[k].x == 399 || gradcvConv[k].y == 399)
+            {
+                cout << "Crop image crop ball. Move window...Or find all range " << endl;
+                ROI = false;
+                return contr(origImage, ROI, pxCenterBall, v, t1, t2, R, p0, cropSize);
+                //ToDo move window
+            }
+        }
+
+        for (int N = 0; N < gradcvConv.size(); ++N) { // return to global px cord
+            gradcvConv[N].x += (pxCenterBall.x - cropSize / 2);
+            gradcvConv[N].y += (pxCenterBall.y - cropSize / 2);
+        }
+    }
+    ROI = true;
+    return gradcvConv;
 }
+
 int main(int argc, char* argv[])
 {
-    long int timer1 = getTickCount();
-	//Mat img = imread("C:\\Users\\Student\\DenisV\\kurs\\BallDetectorV2\\0.png", 1);
-	//Mat pts = imread("C:\\Users\\Student\\DenisV\\kurs\\\BallDetectorV2\\EdgColorForTestBlenderCut.png", 1);
-    //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallMoveExperement1_2.bmp", 1);
-    //Mat pts = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\BallWithLightRightCut.bmp", 1);
 
-    Mat pts = imread("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\Color.png", 1);
-    if (pts.rows == 0 || pts.cols == 0) {
-        cout << "Color example Not Found not found" << endl;
-        return 0;
-    }
+    //ColorFilter parametrs
     Scalar p0;
     Mat v(1, 3, CV_64F);
-    double t1, t2, R;
-    constructColorFilter(pts, v, p0, t1, t2, R); 
-    vector<Point3f> resultsCord;
-        
-    //VideoCapture cap("..\\..\\..\\..\\..\\BallDetectorData\\vid.avi");
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\videoData\\video32frame.avi");
+    double t1, t2, R; 
+
+    //VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
+    VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
+
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
     }
 
-    Mat img;
-    float RadiusBall = 1.0;
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
+    bool ROI = false;
+    int cropSize = 400; //Only even number 
 
-    for (int cikle = 0; cikle < 32; ++cikle) {
-        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\" + to_string(cikle) + ".bmp", 1);
-        //Mat img = imread("D:\\Sirius\\BallDetectorV2\\BallDetectorV2\\TestImagesLight2DMove\\5.bmp", 1);
-        cap >> img;
-        //erode(img, img, Mat(), Point(-1, -1), 5);
-        //dilate(img, img, Mat(), Point(-1, -1), 5);
-        if (img.rows == 0 || img.cols == 0) {
-            cout << "Picture not found" << endl;
-            return 0;
-        }
-        int ny = img.rows;
-        int nx = img.cols;
-        Mat Gray_mask = useColorFilter(img, v, p0, t1, t2, R, nx, ny);
-        if (Gray_mask.rows == 0 || Gray_mask.cols == 0) {
-            cout << "Object not found on the picture" << endl;
-            return 0;
-        }
-        Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-        //erode(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        //dilate(Gray_mask, Gray_mask, Mat(), Point(-1, -1), 5);
-        cv::threshold(Gray_mask, BinaryMask, 20, 255, cv::THRESH_BINARY_INV);
-        //imwrite("Gray.png", Gray_mask);
-        //imwrite("Bin.png", BinaryMask);
-        vector < vector<Point> > gradcv;
-        cout << "Work point" << " nx   " << nx << "  ny  " << ny << endl;
-        cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-        vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+    vector<Point2i> pxCenterBall;
 
-        BallPixSize(gradcvConv);
-        //drawContours(img, gradcv, -1, (0, 255, 255), 1);
+    float dt = 1.0 / 25.0;
+    pxCenterBall.push_back(Point2i(200, 200));
+    long int timer1 = getTickCount();
+    
+
+    Mat ColorPoints = imread("..\\..\\..\\..\\BallDetectorData\\ColorCycles.bmp", 1);
+    if (ColorPoints.rows == 0 || ColorPoints.cols == 0) {
+        cout << "Color example Not Found not found" << endl;
+        return 0;
+    }
+    
+    //RANSAC parameters
+    float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
+    float k = 0.000008; // Distants between plane
+    float abs_counter = 0.95;
+
+
+    constructColorFilter(ColorPoints, v, p0, t1, t2, R);
+
+    //Camera parameters
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    vector<float> distCoeffs = { 0,0,0,0 };
+    Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
+    Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
+    Mat T = (cv::Mat_<float>(3, 1) << 0, 0, 0); //Transpose matrix
+    cv::Mat rvecR(3, 1, CV_64F);//rodrigues rotation matrix
+    cv::Rodrigues(Rx, rvecR);
+
+    Mat sourceImage;
+    vector<Point3f> resultsCord;
+    int cikle = 0;
+    while (true) {
+        cout << " Frame #" << cikle << endl;
+        cap >> sourceImage;
+        if (sourceImage.rows == 0 || sourceImage.cols == 0) {
+            cout << "Picture not found or video end" << endl;
+            break;
+        }
+        vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), v, t1, t2, R, p0, cropSize);
+
         vector<Point2f> grad2;
-        Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.6666666666665, 0, 960.0, 0, 2666.6666666666665, 540.0, 0, 0, 1);
-        vector<int> distCoeffs = { 0,0,0,0 };
-        Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
-        Mat Rx = (Mat_<int>(3, 3) << 1, 0, 0, 0, -1, 0, 0, 0, 1);
-        undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
+        cv::undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
         vector <Point3f> a;
         converter2To3(grad2, a);
         vector <Point3f> v_norm;
         normalizeVectors(a, v_norm);
-        //cout << v_norm << endl;
         vector<Point3f> iva_norm; // Points in finded plane
-        float max_plane[4] = { 0., 0., 0., 0. };
-        float k = 0.00008; // Distants between plane
-        float abs_counter = 0.95;
         int abs_iter = v_norm.size() / 3; // 
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
-        inPointPaint(v_norm, gradcvConv, img, max_plane, k);
-        //imwrite("conturImg.png", img);
-        //writer(iva_norm);
-        //cout << "SumErr " << SumErrPlane(iva_norm, max_plane) << endl;
-        //cout << " Plane Coef: " << max_plane[0] << "   " << max_plane[1] << "   " << max_plane[2] << "  " << max_plane[3] << endl;
 
         //find the cone apex angele 
         double theta;
@@ -386,21 +472,39 @@ int main(int argc, char* argv[])
             sumarc += acos((max_plane[0] * iva_norm[i].x + max_plane[1] * iva_norm[i].y + max_plane[2] * iva_norm[i].z) / normaNormali);
         }
         theta = 2 * (sumarc / iva_norm.size());
-        //cout << "theta = " << theta << endl;
+        float RadiusBall = 1.0;
         double distans = RadiusBall / (sin(theta / 2));
         Point3f ballCoordinates;
         ballCoordinates.x = (distans / normaNormali) * max_plane[0];
         ballCoordinates.y = (distans / normaNormali) * max_plane[1];
         ballCoordinates.z = (distans / normaNormali) * max_plane[2];
-        //cout << " Image #" << cikle << endl;
+
         cout << "result = " << ballCoordinates << endl;
-        //cout << "distance = " << distans << endl;
         resultsCord.push_back(ballCoordinates);
+
+
+
+        // Find px center ball ------------------------------------------------------------------------------------------------------------
+        vector<cv::Point2f> ProjectPointsFind;
+        cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
+        ProjectPointsFind[cikle].x = round(ProjectPointsFind[cikle].x);
+        ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
+        pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
+        //----------------------------------------------------------------------------------------------------------------------------------
+  
+
+        char c = (char)cv::waitKey(1);
+        if (c == 27)
+            break;
+        cout << endl;
+        cv::waitKey(1);
+        cikle += 1;
     }
     writer(resultsCord);
+
     long int timer2 = getTickCount();
     double finalTime = (timer2 - timer1) / getTickFrequency();
     cout << "Programm complete " << finalTime << " sec" << endl;
     waitKey(0);
-	return 0;
+    return 0;
 }
