@@ -7,8 +7,6 @@
 #include <opencv2/opencv.hpp>
 
 
-void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R); // Calculates coefficients (cylinder) from the passed points of the same color (pts)
-Mat useColorFilter(Mat& img, Mat& v, Scalar& p0, double& t1, double& t2, double& R, int& nx, int& ny);  // Applies previously obtained coefficients and builds an alpha mask on the image.
 
 void converter2To3(vector<Point2f>& src, vector <Point3f>& dst);
 void normalizeVectors(vector<Point3f>& src, vector <Point3f>& dst);

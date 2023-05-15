@@ -10,18 +10,20 @@
 #include <typeinfo>
 #include <opencv2/core/utils/logger.hpp>
 
-/*
+using namespace std;
+
 class ColorFilter
 {
 private:
     //ColorFilter parametrs
-    Scalar p0;
-    Mat v;
+    cv::Scalar p0;
+    cv::Mat v;
     double t1, t2, R;
+    cv::Mat ColorPoints;
 public:
-    void constructColorFilter(Mat& pts, Mat& v, Scalar& p0, double& t1, double& t2, double& R); // Calculates coefficients (cylinder) from the passed points of the same color (pts)
-
+    void init();
+    void get_ColorPoints(std::string& path);
+    void constructColorFilter(); // Calculates coefficients (cylinder) from the passed points of the same color (pts)
+    cv::Mat useColorFilter(cv::Mat& img, int& nx, int& ny);  // Applies previously obtained coefficients and builds an alpha mask on the image.
 
 };
-
-*/
