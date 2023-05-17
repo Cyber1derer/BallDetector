@@ -20,6 +20,7 @@ void ColorFilter::get_ColorPoints(std::string& path) {
 }
 
 void ColorFilter::constructColorFilter(){
+    double trashParam = 19.0 / 20.0;
         p0 = mean(ColorPoints);
         Mat di;
         ColorPoints.convertTo(di, CV_64FC3);
@@ -47,8 +48,11 @@ void ColorFilter::constructColorFilter(){
         cv::sort(ti, ts, SORT_ASCENDING + SORT_EVERY_COLUMN);
         cv::sort(Ri, Rs, SORT_ASCENDING + SORT_EVERY_COLUMN);
         int t1_ind = ti.rows / 100;
-        int t2_ind = ti.rows * 19 / 20;
-        int R_ind = Ri.rows * 19 / 20;
+        //int t2_ind = ti.rows * 19 / 20;
+        //int R_ind = Ri.rows * 19 / 20;
+
+        int t2_ind = ti.rows * trashParam;
+        int R_ind = Ri.rows * trashParam;
         t1 = ts.at<double>(t1_ind);
         t2 = ts.at<double>(t2_ind);
         R = Rs.at<double>(R_ind);

@@ -270,7 +270,9 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     Mat Gray_mask = colorFilter.useColorFilter(img, nx, ny);
     Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
 
-    cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
+    cv::threshold(Gray_mask, BinaryMask, 0, 255, cv::THRESH_BINARY_INV);
+    cv::imwrite("BianryMask.bmp", BinaryMask);
+    cv::imwrite("Gray_mask.bmp", Gray_mask);
 
     vector < vector<Point> > gradcv;
     cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -321,6 +323,11 @@ int main(int argc, char* argv[])
 {
 
     
+    namedWindow("Source window", WINDOW_NORMAL);
+    resizeWindow("Source window", 1280, 720);
+
+    //namedWindow("Crop window", WINDOW_NORMAL);
+    //resizeWindow("Crop window", 1280, 720);
 
     //VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
     VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
@@ -350,7 +357,7 @@ int main(int argc, char* argv[])
     
     //RANSAC parameters
     float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
-    float k = 0.000008; // Distants between plane
+    float k = 5*10e-7; // Distants between plane
     float abs_counter = 0.95;
 
     //Camera parameters
@@ -385,6 +392,11 @@ int main(int argc, char* argv[])
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
 
+        if (cikle == 19) {
+            inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
+            imwrite("RANSACWork.png", sourceImage);
+        }
+
         //find the cone apex angele 
         double theta;
         double normaNormali = pow(pow(max_plane[0], 2) + pow(max_plane[1], 2) + pow(max_plane[2], 2), 0.5);
@@ -412,8 +424,18 @@ int main(int argc, char* argv[])
         ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
         pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
         //----------------------------------------------------------------------------------------------------------------------------------
-  
 
+        // Draw center-------------------------------------
+        sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //some color
+        sourceImage.at<Vec3b>(pxCenterBall.back())[0] = 255;
+        sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
+        circle(sourceImage, pxCenterBall.back(), 4, (200, 80, 200), -1);
+        //Draw trajectory-----------------------------
+        for (int k = 1; k < pxCenterBall.size()-1; ++k) {
+            cv::line(sourceImage, pxCenterBall[k], pxCenterBall[k + 1], (0, 0, 0), 3);
+        }
+
+        imshow("Source window", sourceImage);
         char c = (char)cv::waitKey(1);
         if (c == 27)
             break;
