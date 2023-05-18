@@ -234,7 +234,6 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
 } 
 
 vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropSize, ColorFilter& colorFilter) {
-
     int ny = img.rows;
     int nx = img.cols;
     int offsetX = 0;
@@ -270,7 +269,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     Mat Gray_mask = colorFilter.useColorFilter(img, nx, ny);
     Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
 
-    cv::threshold(Gray_mask, BinaryMask, 0, 255, cv::THRESH_BINARY_INV);
+    cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
     cv::imwrite("BianryMask.bmp", BinaryMask);
     cv::imwrite("Gray_mask.bmp", Gray_mask);
 
@@ -289,32 +288,56 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
         cout << "Never - _ - " << endl;
         exit(0);
     }
+
     if (gradcv.size() > 1) {
         imwrite("Gray.png", Gray_mask);
         imwrite("Bin.png", BinaryMask);
         cout << "big grancv" << endl;
         exit(0);
         waitKey(0);
-        waitKey(0);
     }
 
 
+
+
+    /*
+    //Canny--------------------------------------------------------Canny
+    RotatedRect ellipse = fitEllipse(gradcv[0]);
+    // находим координаты центра эллипса
+    Point2f centerEllipse = ellipse.center;
+    // выводим координаты центра в консоль
+    std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
+
+    vector <Point2f> gradSobel;
+    cv::Mat src_gray;
+    cv::cvtColor(img, src_gray, COLOR_BGR2GRAY);
+    Mat edges;
+    Canny(src_gray, edges, 50, 100);
+    imwrite("CannyEdges.bmp", edges);
+    for (int i = 0; i < src_gray.rows; i++) {
+        for (int j = 0; j < src_gray.cols; j++) {
+            if (edges.at<uchar>(i, j) > 10) {
+                gradSobel.push_back(Point2i(j, i));
+            }
+        }
+  //Canny--------------------------------------------------------Canny
+  */
+    
     //------------------------------Sobel
     cv::Mat src_gray;
     cv::Mat grad_x, grad_y, abs_grad_x, abs_grad_y;
 
 
-    int ddepth = CV_16S;
+    int ddepth = CV_8U;
 
     cv::cvtColor(img, src_gray, cv::COLOR_BGR2GRAY);
     cv::imshow("Image gray", src_gray);
     cv::Sobel(src_gray, grad_x, ddepth, 1, 0);
-    cv::convertScaleAbs(grad_x, abs_grad_x);
-    cv::imshow("X-derivative", abs_grad_x);
+    cv::imshow("X-derivative", grad_x);
 
     cv::Sobel(src_gray, grad_y, ddepth, 0, 1);
-    cv::convertScaleAbs(grad_y, abs_grad_y);
-    cv::imshow("Y-derivative", abs_grad_y);
+    cv::imshow("Y-derivative", grad_y);
+
 
     RotatedRect ellipse = fitEllipse(gradcv[0]);
     // находим координаты центра эллипса
@@ -323,27 +346,82 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
     // отображаем эллипс и его центр на изображении
     //ellipse(src, center, Scalar(0, 255, 0), 2);
-    
-    // Calculate value for each pixel
-    for (int i = 0; i < src_gray.rows; i++) {
-        for (int j = 0; j < src_gray.cols; j++) {
-            // Do your calculation on the pixel at i,j
-            uchar pixel = src_gray.at<uchar>(i, j);
-            // Example: invert pixel values
-            pixel = grad_x.at<uchar>(i, j) * abs(centerEllipse.x - j ) + grad_y.at<uchar>(i, j) * abs(centerEllipse.y - i);
-            // Update pixel in the image
-            src_gray.at<uchar>(i, j) = pixel;
-        }
-    }
-    Mat abs_src_gray;
-    cv::convertScaleAbs(src_gray, abs_src_gray);
-    imshow("Counters", abs_src_gray);
+    vector <Point2f> gradSobel;
+    int quail = 2000;
+    double pixel;
 
+    circle(src_gray, Point2i(centerEllipse.x, centerEllipse.y), 15, Scalar::all(255), -1);
+
+    // Calculate value for each pixel
+    for (int i = 800; i < src_gray.rows; i++) {
+        for (int j = 1500; j < src_gray.cols; j++) { 
+            // Do your calculation on the pixel at i,j
+            //pixel = <(j - centerEllipse.x), (i - centerEllipse.y)> * <grad_x(i,j), grad_y>
+            // 
+            // 
+            // 
+            // 
+             // Define two vectors
+            double v_norm = pow((pow((j - centerEllipse.x), 2) + pow(i - centerEllipse.y, 2)), 0.5);
+            Vec2d fromCenter(((double)j - centerEllipse.x), ((double)i - centerEllipse.y));
+            Vec2d SobelVec((double)grad_x.at<uchar>(i, j), (double)grad_y.at<uchar>(i, j));
+            // Compute the cross product
+            double pixel = abs(fromCenter.dot(SobelVec));
+            //cout << "Vec fm c " << fromCenter << endl;
+            //cout << "SobelVec " << SobelVec << endl;
+            //cout << "Pixel " << pixel << endl;
+            //cout << endl;
+
+            // Output the result
+            //cout << "The cross product: " << pixel << endl;
+
+
+
+
+            // Example: invert pixel values
+            //pixel = grad_x.at<uchar>(i, j) * ( abs(centerEllipse.x - j) / v_norm) + grad_y.at<uchar>(i, j) * ( abs(centerEllipse.y - i) / v_norm);
+            // Update pixel in the image
+            //imshow("src gray", src_gray);
+
+            //waitKey();
+            src_gray.at<uchar>(i, j) = pixel;
+            if (pixel  > quail) {
+                gradSobel.push_back(Point2i(j,i));
+            }
+
+        }
+
+    }
+
+    imshow("Sob x", grad_x);
+    imshow("Sob y", grad_y);
+
+    waitKey(1);
+
+
+    
+
+
+    //cout << "GradSoble" << gradSobel << endl;
+    
+    for (const auto& point : gradSobel) {
+        img.at<Vec3b>(point)[0] = 0;
+        img.at<Vec3b>(point)[1] = 255;
+        img.at<Vec3b>(point)[2] = 0;
+    }
+    imwrite("img_with_SobelGrad.png", img);
+    //imshow("ImgSobel", img);
+    waitKey(0);
+    
     //---------------------------------------------Sobel end
 
 
 
-    vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+    //vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+    // 
+    // 
+    vector<Point2f> gradcvConv = gradSobel;
+
     if (ROI) {
         //check edge crop
         for (int k = 0; k < gradcvConv.size(); ++k) {
@@ -375,7 +453,7 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video48Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
@@ -393,7 +471,7 @@ int main(int argc, char* argv[])
     pxCenterBall.push_back(Point2i(200, 200));
     long int timer1 = getTickCount();
 
-    std::string path = "..\\..\\..\\..\\BallDetectorData\\ColorCycles.bmp";
+    std::string path = "..\\..\\..\\..\\BallDetectorData\\ColorPaint.bmp";
 
     ColorFilter colorFilter;
 
@@ -403,7 +481,7 @@ int main(int argc, char* argv[])
     
     //RANSAC parameters
     float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
-    float k = 6*10e-7; // Distants between plane
+    float k =8*10e-7; // Distants between plane
     float abs_counter = 0.95;
 
     //Camera parameters
@@ -418,15 +496,18 @@ int main(int argc, char* argv[])
     Mat sourceImage;
     vector<Point3f> resultsCord;
     int cikle = 0;
-    while (cikle == 0) {
+   // while (cikle < 16) {
+    while (true) {
         cout << " Frame #" << cikle << endl;
         cap >> sourceImage;
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
             break;
         }
+        if (cikle == 25) {
+            imwrite("sourceCap.bmp", sourceImage);
+        }
         vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), cropSize, colorFilter);
-
         vector<Point2f> grad2;
         cv::undistortPoints(gradcvConv, grad2, cameraMatrix, distCoeffs, Rx, P = P); // точки без искажений и равные метрам
         vector <Point3f> a;
@@ -438,7 +519,7 @@ int main(int argc, char* argv[])
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
 
-        if (cikle == 19) {
+        if (true) {
             inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
             imwrite("RANSACWork.png", sourceImage);
         }
