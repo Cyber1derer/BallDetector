@@ -276,6 +276,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
     vector < vector<Point> > gradcv;
     cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+
     cout << "gradcv size: " << gradcv.size() << endl;
 
     if (gradcv.size() == 0) {
@@ -296,6 +297,51 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
         waitKey(0);
         waitKey(0);
     }
+
+
+    //------------------------------Sobel
+    cv::Mat src_gray;
+    cv::Mat grad_x, grad_y, abs_grad_x, abs_grad_y;
+
+
+    int ddepth = CV_16S;
+
+    cv::cvtColor(img, src_gray, cv::COLOR_BGR2GRAY);
+    cv::imshow("Image gray", src_gray);
+    cv::Sobel(src_gray, grad_x, ddepth, 1, 0);
+    cv::convertScaleAbs(grad_x, abs_grad_x);
+    cv::imshow("X-derivative", abs_grad_x);
+
+    cv::Sobel(src_gray, grad_y, ddepth, 0, 1);
+    cv::convertScaleAbs(grad_y, abs_grad_y);
+    cv::imshow("Y-derivative", abs_grad_y);
+
+    RotatedRect ellipse = fitEllipse(gradcv[0]);
+    // находим координаты центра эллипса
+    Point2f centerEllipse = ellipse.center;
+    // выводим координаты центра в консоль
+    std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
+    // отображаем эллипс и его центр на изображении
+    //ellipse(src, center, Scalar(0, 255, 0), 2);
+    
+    // Calculate value for each pixel
+    for (int i = 0; i < src_gray.rows; i++) {
+        for (int j = 0; j < src_gray.cols; j++) {
+            // Do your calculation on the pixel at i,j
+            uchar pixel = src_gray.at<uchar>(i, j);
+            // Example: invert pixel values
+            pixel = grad_x.at<uchar>(i, j) * abs(centerEllipse.x - j ) + grad_y.at<uchar>(i, j) * abs(centerEllipse.y - i);
+            // Update pixel in the image
+            src_gray.at<uchar>(i, j) = pixel;
+        }
+    }
+    Mat abs_src_gray;
+    cv::convertScaleAbs(src_gray, abs_src_gray);
+    imshow("Counters", abs_src_gray);
+
+    //---------------------------------------------Sobel end
+
+
 
     vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
     if (ROI) {
@@ -329,8 +375,8 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    //VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
-    VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video48Cycles.avi");
+    //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
@@ -357,7 +403,7 @@ int main(int argc, char* argv[])
     
     //RANSAC parameters
     float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
-    float k = 5*10e-7; // Distants between plane
+    float k = 6*10e-7; // Distants between plane
     float abs_counter = 0.95;
 
     //Camera parameters
@@ -372,7 +418,7 @@ int main(int argc, char* argv[])
     Mat sourceImage;
     vector<Point3f> resultsCord;
     int cikle = 0;
-    while (true) {
+    while (cikle == 0) {
         cout << " Frame #" << cikle << endl;
         cap >> sourceImage;
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
@@ -424,6 +470,7 @@ int main(int argc, char* argv[])
         ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
         pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
         //----------------------------------------------------------------------------------------------------------------------------------
+        std::cout << "My px center: x = " << pxCenterBall.back().x << ", y = " << pxCenterBall.back().y << std::endl;
 
         // Draw center-------------------------------------
         sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //some color
