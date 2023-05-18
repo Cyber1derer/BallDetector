@@ -2,12 +2,16 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <typeinfo>
+#include <vector>
+#include <algorithm>
+
+#include <nlohmann/json.hpp>
+
 #include <opencv2/calib3d.hpp> // Undistort and Rodrigues 
 #include <opencv2/imgproc.hpp> //FindCont
 #include <opencv2/imgcodecs.hpp> //Imread
 #include <opencv2/highgui.hpp> // Waitkey
-#include <nlohmann/json.hpp>
-#include <typeinfo>
 #include <opencv2/core/utils/logger.hpp>
 
 
@@ -347,14 +351,14 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     // отображаем эллипс и его центр на изображении
     //ellipse(src, center, Scalar(0, 255, 0), 2);
     vector <Point2f> gradSobel;
-    int quail = 2000;
+    int quail = 35;
     double pixel;
-
+    vector<double> pixelVec;
     circle(src_gray, Point2i(centerEllipse.x, centerEllipse.y), 15, Scalar::all(255), -1);
 
     // Calculate value for each pixel
-    for (int i = 800; i < src_gray.rows; i++) {
-        for (int j = 1500; j < src_gray.cols; j++) { 
+    for (int i = 0; i < src_gray.rows; i++) {
+        for (int j = 0; j < src_gray.cols; j++) { 
             // Do your calculation on the pixel at i,j
             //pixel = <(j - centerEllipse.x), (i - centerEllipse.y)> * <grad_x(i,j), grad_y>
             // 
@@ -363,8 +367,8 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
             // 
              // Define two vectors
             double v_norm = pow((pow((j - centerEllipse.x), 2) + pow(i - centerEllipse.y, 2)), 0.5);
-            Vec2d fromCenter(((double)j - centerEllipse.x), ((double)i - centerEllipse.y));
-            Vec2d SobelVec((double)grad_x.at<uchar>(i, j), (double)grad_y.at<uchar>(i, j));
+            Vec2d fromCenter( (j - centerEllipse.x)/v_norm, (i - centerEllipse.y)/ v_norm);
+            Vec2d SobelVec(grad_x.at<uchar>(i, j), grad_y.at<uchar>(i, j));
             // Compute the cross product
             double pixel = abs(fromCenter.dot(SobelVec));
             //cout << "Vec fm c " << fromCenter << endl;
@@ -382,19 +386,28 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
             //pixel = grad_x.at<uchar>(i, j) * ( abs(centerEllipse.x - j) / v_norm) + grad_y.at<uchar>(i, j) * ( abs(centerEllipse.y - i) / v_norm);
             // Update pixel in the image
             //imshow("src gray", src_gray);
-
+            pixelVec.push_back(pixel);
             //waitKey();
-            src_gray.at<uchar>(i, j) = pixel;
-            if (pixel  > quail) {
-                gradSobel.push_back(Point2i(j,i));
+
+            if (pixel > quail) {
+                gradSobel.push_back(Point2i(j+1 , i+1 ));
+
             }
 
         }
 
     }
 
-    imshow("Sob x", grad_x);
-    imshow("Sob y", grad_y);
+    auto min = *std::min_element(pixelVec.begin(), pixelVec.end());
+    auto max = *std::max_element(pixelVec.begin(), pixelVec.end());
+
+    std::cout << "Minimum element: " << min << std::endl;
+    std::cout << "Maximum element: " << max << std::endl;
+
+    // 
+    // 
+    //imshow("Sob x", grad_x);
+    //imshow("Sob y", grad_y);
 
     waitKey(1);
 
@@ -403,7 +416,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
 
     //cout << "GradSoble" << gradSobel << endl;
-    
+    /*
     for (const auto& point : gradSobel) {
         img.at<Vec3b>(point)[0] = 0;
         img.at<Vec3b>(point)[1] = 255;
@@ -412,7 +425,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     imwrite("img_with_SobelGrad.png", img);
     //imshow("ImgSobel", img);
     waitKey(0);
-    
+    */
     //---------------------------------------------Sobel end
 
 
@@ -421,7 +434,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     // 
     // 
     vector<Point2f> gradcvConv = gradSobel;
-
+    
     if (ROI) {
         //check edge crop
         for (int k = 0; k < gradcvConv.size(); ++k) {
@@ -471,7 +484,7 @@ int main(int argc, char* argv[])
     pxCenterBall.push_back(Point2i(200, 200));
     long int timer1 = getTickCount();
 
-    std::string path = "..\\..\\..\\..\\BallDetectorData\\ColorPaint.bmp";
+    std::string path = "..\\..\\..\\..\\BallDetectorData\\ColorCycles.bmp";
 
     ColorFilter colorFilter;
 
@@ -481,7 +494,7 @@ int main(int argc, char* argv[])
     
     //RANSAC parameters
     float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
-    float k =8*10e-7; // Distants between plane
+    float k =5*10e-7; // Distants between plane
     float abs_counter = 0.95;
 
     //Camera parameters
@@ -568,7 +581,7 @@ int main(int argc, char* argv[])
         if (c == 27)
             break;
         cout << endl;
-        cv::waitKey(1);
+        cv::waitKey(0);
         cikle += 1;
     }
     writer(resultsCord);
