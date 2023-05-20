@@ -75,9 +75,9 @@ z_find = FindCord63SobelOffset[:,2] # z-coordinates of the points
 # Create a 3D plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot(x_blender, y_blender, z_blender, '-')
+ax.plot(x_blender, y_blender, z_blender, '-', label = "True trajectory")
 
-ax.plot(x_find, y_find, z_find, "-s")
+ax.plot(x_find, y_find, z_find, "-s", label = "Finding points")
 # Set the axis labels
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
@@ -86,7 +86,7 @@ ax.set_zlabel('Z')
 # Set the x and y limits
 plt.axis('equal')
 
-
+plt.legend()
 # Rotate the plot
 #ax.view_init(elev=90, azim=-90)
 # Show the plot

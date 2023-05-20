@@ -14,6 +14,7 @@
 #include <opencv2/highgui.hpp> // Waitkey
 #include <opencv2/core/utils/logger.hpp>
 
+#include <chrono>
 
 using json = nlohmann::json; // synonim for data type nlohmann::json
 
@@ -165,8 +166,8 @@ void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_coun
         }
         ++iter;
     }
-    cout << "max counter" << max_counter << endl;
-    cout << "iter" << iter << endl;
+    //cout << "max counter" << max_counter << endl;
+    //cout << "iter" << iter << endl;
 }
 
 void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_counter, int& abs_iter) //With random point
@@ -195,8 +196,8 @@ void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& 
         }
         ++iter;
     }
-    cout << "max counter" << max_counter << endl;
-    cout << "iter" << iter << endl;
+    //cout << "max counter" << max_counter << endl;
+    //cout << "iter" << iter << endl;
 }
 
 void inPoint(float* plane, vector<Point3f>& ptr, vector<Point3f>& inptr, float& k)
@@ -232,7 +233,7 @@ float SumErrPlane(vector<Point3f> iva_norm, float* max_plane) {
     float SumErr = 0;
     for (int i = 0; i < iva_norm.size(); ++i) {
         SumErr += abs(max_plane[0] * iva_norm[i].x + max_plane[1] * iva_norm[i].y + max_plane[2] * iva_norm[i].z + max_plane[3]);
-        cout << SumErr << endl;
+        //cout << SumErr << endl;
     }
     return SumErr;
 } 
@@ -274,13 +275,13 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
 
     cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
-    cv::imwrite("BianryMask.bmp", BinaryMask);
-    cv::imwrite("Gray_mask.bmp", Gray_mask);
+    //cv::imwrite("BianryMask.bmp", BinaryMask);
+    //cv::imwrite("Gray_mask.bmp", Gray_mask);
 
     vector < vector<Point> > gradcv;
     cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 
-    cout << "gradcv size: " << gradcv.size() << endl;
+    //cout << "gradcv size: " << gradcv.size() << endl;
 
     if (gradcv.size() == 0) {
         cout << "Object (edge) do not detected. " << endl;
@@ -335,23 +336,23 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     int ddepth = CV_8U;
 
     cv::cvtColor(img, src_gray, cv::COLOR_BGR2GRAY);
-    cv::imshow("Image gray", src_gray);
+    //cv::imshow("Image gray", src_gray);
     cv::Sobel(src_gray, grad_x, ddepth, 1, 0);
-    cv::imshow("X-derivative", grad_x);
+    //cv::imshow("X-derivative", grad_x);
 
     cv::Sobel(src_gray, grad_y, ddepth, 0, 1);
-    cv::imshow("Y-derivative", grad_y);
+    //cv::imshow("Y-derivative", grad_y);
 
 
     RotatedRect ellipse = fitEllipse(gradcv[0]);
     // находим координаты центра эллипса
     Point2f centerEllipse = ellipse.center;
     // выводим координаты центра в консоль
-    std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
+    //std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
     // отображаем эллипс и его центр на изображении
     //ellipse(src, center, Scalar(0, 255, 0), 2);
     vector <Point2f> gradSobel;
-    int quail = 35;
+    int quail = 30;
     double pixel;
     vector<double> pixelVec;
     circle(src_gray, Point2i(centerEllipse.x, centerEllipse.y), 15, Scalar::all(255), -1);
@@ -389,7 +390,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
             pixelVec.push_back(pixel);
             //waitKey();
 
-            if (pixel > quail) {
+            if (pixel > abs(quail)) {
                 gradSobel.push_back(Point2i(j+1 , i+1 ));
 
             }
@@ -398,18 +399,18 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
     }
 
-    auto min = *std::min_element(pixelVec.begin(), pixelVec.end());
-    auto max = *std::max_element(pixelVec.begin(), pixelVec.end());
+    //auto min = *std::min_element(pixelVec.begin(), pixelVec.end());
+    //auto max = *std::max_element(pixelVec.begin(), pixelVec.end());
 
-    std::cout << "Minimum element: " << min << std::endl;
-    std::cout << "Maximum element: " << max << std::endl;
+    //std::cout << "Minimum element: " << min << std::endl;
+    //std::cout << "Maximum element: " << max << std::endl;
 
     // 
     // 
     //imshow("Sob x", grad_x);
     //imshow("Sob y", grad_y);
 
-    waitKey(1);
+    //waitKey(1);
 
 
     
@@ -421,11 +422,11 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
         img.at<Vec3b>(point)[0] = 0;
         img.at<Vec3b>(point)[1] = 255;
         img.at<Vec3b>(point)[2] = 0;
-    }
-    imwrite("img_with_SobelGrad.png", img);
+    } */
+    //imwrite("img_with_SobelGrad.png", img);
     //imshow("ImgSobel", img);
-    waitKey(0);
-    */
+    //waitKey(0);
+    
     //---------------------------------------------Sobel end
 
 
@@ -466,7 +467,7 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video190.avi");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
@@ -482,7 +483,7 @@ int main(int argc, char* argv[])
 
     float dt = 1.0 / 25.0;
     pxCenterBall.push_back(Point2i(200, 200));
-    long int timer1 = getTickCount();
+    long double timer1 = getTickCount();
 
     std::string path = "..\\..\\..\\..\\BallDetectorData\\ColorCycles.bmp";
 
@@ -494,7 +495,7 @@ int main(int argc, char* argv[])
     
     //RANSAC parameters
     float max_plane[4] = { 0.0, 0.0, 0.0, 0.0 };
-    float k =5*10e-7; // Distants between plane
+    float k =6*10e-7; // Distants between plane
     float abs_counter = 0.95;
 
     //Camera parameters
@@ -510,8 +511,9 @@ int main(int argc, char* argv[])
     vector<Point3f> resultsCord;
     int cikle = 0;
    // while (cikle < 16) {
+    auto start = std::chrono::high_resolution_clock::now();
     while (true) {
-        cout << " Frame #" << cikle << endl;
+        //cout << " Frame #" << cikle << endl;
         cap >> sourceImage;
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
@@ -576,19 +578,18 @@ int main(int argc, char* argv[])
             cv::line(sourceImage, pxCenterBall[k], pxCenterBall[k + 1], (0, 0, 0), 3);
         }
 
-        imshow("Source window", sourceImage);
-        char c = (char)cv::waitKey(1);
+        //imshow("Source window", sourceImage);
+        /*char c = (char)cv::waitKey(1);
         if (c == 27)
             break;
         cout << endl;
-        cv::waitKey(0);
+        //cv::waitKey(1); */
         cikle += 1;
     }
     writer(resultsCord);
-
-    long int timer2 = getTickCount();
-    double finalTime = (timer2 - timer1) / getTickFrequency();
-    cout << "Programm complete " << finalTime << " sec" << endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " ms" << std::endl;
     waitKey(0);
     return 0;
 }
