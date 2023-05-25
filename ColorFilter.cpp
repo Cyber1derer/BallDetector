@@ -48,11 +48,11 @@ void ColorFilter::constructColorFilter(){
         cv::sort(ti, ts, SORT_ASCENDING + SORT_EVERY_COLUMN);
         cv::sort(Ri, Rs, SORT_ASCENDING + SORT_EVERY_COLUMN);
         int t1_ind = ti.rows / 100;
-        //int t2_ind = ti.rows * 19 / 20;
-        //int R_ind = Ri.rows * 19 / 20;
-
         int t2_ind = ti.rows * trashParam;
         int R_ind = Ri.rows * trashParam;
+
+        //int t2_ind = ti.rows * trashParam;
+        //int R_ind = Ri.rows * trashParam;
         t1 = ts.at<double>(t1_ind);
         t2 = ts.at<double>(t2_ind);
         R = Rs.at<double>(R_ind);
@@ -70,6 +70,12 @@ Mat ColorFilter::useColorFilter(Mat& img, int& nx, int& ny) {
 
     Mat di;
     pi.convertTo(di, CV_64FC3);
+    cout << "di size: " << di.size() << "   pi size: " << pi.size() << endl;
+    cout << "di type: " << di.type() << "   pi type: " << pi.type() <<"  Img type: " << img.type() << endl;
+    cout << "di DEPTH: " << CV_MAT_DEPTH(di.type()) << "   pi DEPTH: " << CV_MAT_DEPTH(pi.type()) << endl;
+    cout << "di channels : " << CV_MAT_CN(di.type()) << "   pi channels : " << CV_MAT_CN(pi.type()) << endl;
+
+
     di = di - p0;
     Mat t, dp;
     for (int x = 0; x < di.rows; ++x)
@@ -77,6 +83,9 @@ Mat ColorFilter::useColorFilter(Mat& img, int& nx, int& ny) {
         t.push_back(di.at<Vec3d>(x).t() * v.at<Vec3d>(0, 0));
         dp.push_back(cv::norm(t.at<double>(x) * v.at<Vec3d>(0, 0) - di.at<Vec3d>(x)));
     }
+    cout << "di rows: " << di.rows << endl;
+    cout << "t size: " << t.size() << "   dp size: " << dp.size() << endl;
+
     Mat dt = cv::abs(t - (t1 + t2) / 2) - (t2 - t1) / 2;
     dt = cv::max(dt, 0);
     dp = cv::max(dp - R, 0);

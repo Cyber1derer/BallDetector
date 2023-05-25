@@ -166,8 +166,8 @@ void findPlane(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_coun
         }
         ++iter;
     }
-    //cout << "max counter" << max_counter << endl;
-    //cout << "iter" << iter << endl;
+    cout << "max counter" << max_counter << endl;
+    cout << "iter" << iter << endl;
 }
 
 void findPlaneVersion2(vector<Point3f>& ptr, float* max_plane, float& k, float& abs_counter, int& abs_iter) //With random point
@@ -276,7 +276,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
     cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
     //cv::imwrite("BianryMask.bmp", BinaryMask);
-    //cv::imwrite("Gray_mask.bmp", Gray_mask);
+    cv::imwrite("Gray_mask.bmp", Gray_mask);
 
     vector < vector<Point> > gradcv;
     cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -338,10 +338,10 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     cv::cvtColor(img, src_gray, cv::COLOR_BGR2GRAY);
     //cv::imshow("Image gray", src_gray);
     cv::Sobel(src_gray, grad_x, ddepth, 1, 0);
-    //cv::imshow("X-derivative", grad_x);
+    cv::imshow("X-derivative", grad_x);
 
     cv::Sobel(src_gray, grad_y, ddepth, 0, 1);
-    //cv::imshow("Y-derivative", grad_y);
+    cv::imshow("Y-derivative", grad_y);
 
 
     RotatedRect ellipse = fitEllipse(gradcv[0]);
@@ -417,13 +417,13 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
 
     //cout << "GradSoble" << gradSobel << endl;
-    /*
+    
     for (const auto& point : gradSobel) {
         img.at<Vec3b>(point)[0] = 0;
         img.at<Vec3b>(point)[1] = 255;
         img.at<Vec3b>(point)[2] = 0;
-    } */
-    //imwrite("img_with_SobelGrad.png", img);
+    } 
+    imwrite("img_with_SobelGrad.png", img);
     //imshow("ImgSobel", img);
     //waitKey(0);
     
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video190.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\Video63MotionBlur05_03.avi");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
@@ -509,7 +509,7 @@ int main(int argc, char* argv[])
 
     Mat sourceImage;
     vector<Point3f> resultsCord;
-    int cikle = 0;
+    int cycle = 0;
    // while (cikle < 16) {
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
@@ -519,7 +519,7 @@ int main(int argc, char* argv[])
             cout << "Picture not found or video end" << endl;
             break;
         }
-        if (cikle == 25) {
+        if (cycle == 25) {
             imwrite("sourceCap.bmp", sourceImage);
         }
         vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), cropSize, colorFilter);
@@ -562,9 +562,9 @@ int main(int argc, char* argv[])
         // Find px center ball ------------------------------------------------------------------------------------------------------------
         vector<cv::Point2f> ProjectPointsFind;
         cv::projectPoints(resultsCord, rvecR, T, cameraMatrix, distCoeffs, ProjectPointsFind);
-        ProjectPointsFind[cikle].x = round(ProjectPointsFind[cikle].x);
-        ProjectPointsFind[cikle].y = round(ProjectPointsFind[cikle].y);
-        pxCenterBall.push_back(Point2i(ProjectPointsFind[cikle].x, ProjectPointsFind[cikle].y));
+        ProjectPointsFind[cycle].x = round(ProjectPointsFind[cycle].x);
+        ProjectPointsFind[cycle].y = round(ProjectPointsFind[cycle].y);
+        pxCenterBall.push_back(Point2i(ProjectPointsFind[cycle].x, ProjectPointsFind[cycle].y));
         //----------------------------------------------------------------------------------------------------------------------------------
         std::cout << "My px center: x = " << pxCenterBall.back().x << ", y = " << pxCenterBall.back().y << std::endl;
 
@@ -584,7 +584,8 @@ int main(int argc, char* argv[])
             break;
         cout << endl;
         //cv::waitKey(1); */
-        cikle += 1;
+        cv::waitKey(1);
+        cycle += 1;
     }
     writer(resultsCord);
     auto end = std::chrono::high_resolution_clock::now();
