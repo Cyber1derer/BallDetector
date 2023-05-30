@@ -25,5 +25,4 @@ public:
     void get_ColorPoints(std::string& path);
     void constructColorFilter(); // Calculates coefficients (cylinder) from the passed points of the same color (pts)
     cv::Mat useColorFilter(cv::Mat& img, int& nx, int& ny);  // Applies previously obtained coefficients and builds an alpha mask on the image.
-
 };

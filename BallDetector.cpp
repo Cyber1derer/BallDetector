@@ -273,10 +273,58 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
     Mat Gray_mask = colorFilter.useColorFilter(img, nx, ny);
     Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
+    cv::imwrite("Gray_mask.bmp", Gray_mask);
 
+    //vector<float> colorBright = colorFilter.colorHist(Gray_mask);
+
+    vector<int> colorBrightX;
+    for (int i = 0; i < Gray_mask.cols; ++i) {
+        int sum = 0;
+
+        for (int j = 0; j < Gray_mask.rows; j++) {
+            sum += 255 - Gray_mask.at<uchar>(j, i);
+        }
+        colorBrightX.push_back(sum);
+    }
+
+    vector<int> colorBrightY;
+    for (int i = 0; i < Gray_mask.rows; ++i) {
+        int sum = 0;
+
+        for (int j = 0; j < Gray_mask.cols; j++) {
+            sum += 255 - Gray_mask.at<uchar>(i, j);
+        }
+        colorBrightY.push_back(sum);
+    }
+
+
+
+
+    auto max_element_iter = std::max_element(colorBrightX.begin(), colorBrightX.end());
+    size_t max_element_index = std::distance(colorBrightX.begin(), max_element_iter);
+
+    cout << "Hist max " << *max_element_iter << endl;
+    cout << "Hist max index (x) " << max_element_index << endl;
+
+    auto max_element_iterY = std::max_element(colorBrightY.begin(), colorBrightY.end());
+    size_t max_element_indexY = std::distance(colorBrightY.begin(), max_element_iterY);
+
+    cout << "Hist max " << *max_element_iterY << endl;
+    cout << "Hist max index (x) " << max_element_indexY << endl;
+
+
+    /*
+    for (int i = 0; i < colorBright.size(); i++) {
+        if (colorBright[i] < *max_element_iter*0.2) {
+            colorBright[i] = 0;
+        }
+    }
+    */
+
+
+    /*  -------------------- Old metod find pxCenter
     cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
     //cv::imwrite("BianryMask.bmp", BinaryMask);
-    cv::imwrite("Gray_mask.bmp", Gray_mask);
 
     vector < vector<Point> > gradcv;
     cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
@@ -302,7 +350,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
         waitKey(0);
     }
 
-
+    */
 
 
     /*
@@ -344,9 +392,9 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     cv::imshow("Y-derivative", grad_y);
 
 
-    RotatedRect ellipse = fitEllipse(gradcv[0]);
+    // Old metod find center RotatedRect ellipse = fitEllipse(gradcv[0]);
     // находим координаты центра эллипса
-    Point2f centerEllipse = ellipse.center;
+    Point2f centerEllipse = (max_element_index, max_element_indexY);
     // выводим координаты центра в консоль
     //std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
     // отображаем эллипс и его центр на изображении
@@ -355,7 +403,6 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     int quail = 30;
     double pixel;
     vector<double> pixelVec;
-    circle(src_gray, Point2i(centerEllipse.x, centerEllipse.y), 15, Scalar::all(255), -1);
 
     // Calculate value for each pixel
     for (int i = 0; i < src_gray.rows; i++) {
@@ -467,7 +514,7 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\Video63MotionBlur05_03.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\0.png");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
@@ -514,7 +561,8 @@ int main(int argc, char* argv[])
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         //cout << " Frame #" << cikle << endl;
-        cap >> sourceImage;
+        //cap >> sourceImage;
+        sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\0.png",1);
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
             break;
@@ -586,6 +634,7 @@ int main(int argc, char* argv[])
         //cv::waitKey(1); */
         cv::waitKey(1);
         cycle += 1;
+        break;
     }
     writer(resultsCord);
     auto end = std::chrono::high_resolution_clock::now();

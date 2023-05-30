@@ -70,10 +70,10 @@ Mat ColorFilter::useColorFilter(Mat& img, int& nx, int& ny) {
 
     Mat di;
     pi.convertTo(di, CV_64FC3);
-    cout << "di size: " << di.size() << "   pi size: " << pi.size() << endl;
-    cout << "di type: " << di.type() << "   pi type: " << pi.type() <<"  Img type: " << img.type() << endl;
-    cout << "di DEPTH: " << CV_MAT_DEPTH(di.type()) << "   pi DEPTH: " << CV_MAT_DEPTH(pi.type()) << endl;
-    cout << "di channels : " << CV_MAT_CN(di.type()) << "   pi channels : " << CV_MAT_CN(pi.type()) << endl;
+    //cout << "di size: " << di.size() << "   pi size: " << pi.size() << endl;
+    //cout << "di type: " << di.type() << "   pi type: " << pi.type() <<"  Img type: " << img.type() << endl;
+    //cout << "di DEPTH: " << CV_MAT_DEPTH(di.type()) << "   pi DEPTH: " << CV_MAT_DEPTH(pi.type()) << endl;
+    //cout << "di channels : " << CV_MAT_CN(di.type()) << "   pi channels : " << CV_MAT_CN(pi.type()) << endl;
 
 
     di = di - p0;
@@ -90,14 +90,14 @@ Mat ColorFilter::useColorFilter(Mat& img, int& nx, int& ny) {
     dt = cv::max(dt, 0);
     dp = cv::max(dp - R, 0);
     Mat d = dp + dt;
-    Mat d_mask;
-    d.convertTo(d_mask, CV_8U);
+    Mat d_mask_vec;
+    d.convertTo(d_mask_vec, CV_8U);
     Mat d_maska(ny, nx, CV_8U);
     for (int y = 0; y < ny; ++y)
     {
         for (int x = 0; x < nx; ++x)
         {
-            d_maska.at<uchar>(y, x) = d_mask.at<uchar>(y * nx + x);
+            d_maska.at<uchar>(y, x) = d_mask_vec.at<uchar>(y * nx + x);
         }
     }
     return d_maska;
