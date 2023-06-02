@@ -272,11 +272,12 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     }
 
     Mat Gray_mask = colorFilter.useColorFilter(img, nx, ny);
-    Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
-    cv::imwrite("Gray_mask.bmp", Gray_mask);
+    //cv::imwrite("Gray_mask.bmp", Gray_mask);
 
     //vector<float> colorBright = colorFilter.colorHist(Gray_mask);
 
+
+    /*
     vector<int> colorBrightX;
     for (int i = 0; i < Gray_mask.cols; ++i) {
         int sum = 0;
@@ -303,14 +304,14 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     auto max_element_iter = std::max_element(colorBrightX.begin(), colorBrightX.end());
     size_t max_element_index = std::distance(colorBrightX.begin(), max_element_iter);
 
-    cout << "Hist max " << *max_element_iter << endl;
-    cout << "Hist max index (x) " << max_element_index << endl;
+    //cout << "Hist max x " << *max_element_iter << endl;
+    //cout << "Hist max index (x) " << max_element_index << endl;
 
     auto max_element_iterY = std::max_element(colorBrightY.begin(), colorBrightY.end());
     size_t max_element_indexY = std::distance(colorBrightY.begin(), max_element_iterY);
-
-    cout << "Hist max " << *max_element_iterY << endl;
-    cout << "Hist max index (x) " << max_element_indexY << endl;
+    */
+    //cout << "Hist max y " << *max_element_iterY << endl;
+    //cout << "Hist max index (y) " << max_element_indexY << endl;
 
 
     /*
@@ -321,60 +322,6 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     }
     */
 
-
-    /*  -------------------- Old metod find pxCenter
-    cv::threshold(Gray_mask, BinaryMask, 10, 255, cv::THRESH_BINARY_INV);
-    //cv::imwrite("BianryMask.bmp", BinaryMask);
-
-    vector < vector<Point> > gradcv;
-    cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
-
-    //cout << "gradcv size: " << gradcv.size() << endl;
-
-    if (gradcv.size() == 0) {
-        cout << "Object (edge) do not detected. " << endl;
-        if (ROI) {
-            cout << "Try search on full image..... " << endl;
-            ROI = false;
-            return contr(origImage, ROI, pxCenterBall, cropSize, colorFilter);
-        }
-        cout << "Never - _ - " << endl;
-        exit(0);
-    }
-
-    if (gradcv.size() > 1) {
-        imwrite("Gray.png", Gray_mask);
-        imwrite("Bin.png", BinaryMask);
-        cout << "big grancv" << endl;
-        exit(0);
-        waitKey(0);
-    }
-
-    */
-
-
-    /*
-    //Canny--------------------------------------------------------Canny
-    RotatedRect ellipse = fitEllipse(gradcv[0]);
-    // находим координаты центра эллипса
-    Point2f centerEllipse = ellipse.center;
-    // выводим координаты центра в консоль
-    std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
-
-    vector <Point2f> gradSobel;
-    cv::Mat src_gray;
-    cv::cvtColor(img, src_gray, COLOR_BGR2GRAY);
-    Mat edges;
-    Canny(src_gray, edges, 50, 100);
-    imwrite("CannyEdges.bmp", edges);
-    for (int i = 0; i < src_gray.rows; i++) {
-        for (int j = 0; j < src_gray.cols; j++) {
-            if (edges.at<uchar>(i, j) > 10) {
-                gradSobel.push_back(Point2i(j, i));
-            }
-        }
-  //Canny--------------------------------------------------------Canny
-  */
     
     //------------------------------Sobel
     cv::Mat src_gray;
@@ -386,15 +333,33 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     cv::cvtColor(img, src_gray, cv::COLOR_BGR2GRAY);
     //cv::imshow("Image gray", src_gray);
     cv::Sobel(src_gray, grad_x, ddepth, 1, 0);
-    cv::imshow("X-derivative", grad_x);
+    //cv::imshow("X-derivative", grad_x);
 
     cv::Sobel(src_gray, grad_y, ddepth, 0, 1);
-    cv::imshow("Y-derivative", grad_y);
+    //cv::imshow("Y-derivative", grad_y);
 
 
     // Old metod find center RotatedRect ellipse = fitEllipse(gradcv[0]);
     // находим координаты центра эллипса
-    Point2f centerEllipse = (max_element_index, max_element_indexY);
+    Mat BinaryMask(ny, nx, CV_8U, Scalar(0));
+    cv::threshold(Gray_mask, BinaryMask, 40, 255, cv::THRESH_BINARY_INV);
+    //vector < vector<Point> > gradcv;
+    //cv::findContours(BinaryMask, gradcv, noArray(), cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
+    //cout << "gradcv size: " << gradcv.size() << endl;
+    //vector<Point2f> gradcvConv(gradcv[0].begin(), gradcv[0].end());
+
+    Moments moments = cv::moments(BinaryMask);
+     // Access centroid coordinates
+    double cx = moments.m10 / moments.m00;
+    double cy = moments.m01 / moments.m00;
+
+    // Print coordinates to console
+    //cout << "Centroid coordinates: (" << cx << ", " << cy << ")" << endl;
+
+
+
+
+    Point2f centerEllipse(cx, cy);
     // выводим координаты центра в консоль
     //std::cout << "Ellipse center: x = " << centerEllipse.x << ", y = " << centerEllipse.y << std::endl;
     // отображаем эллипс и его центр на изображении
@@ -402,6 +367,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     vector <Point2f> gradSobel;
     int quail = 30;
     double pixel;
+    double v_norm;
     vector<double> pixelVec;
 
     // Calculate value for each pixel
@@ -409,29 +375,14 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
         for (int j = 0; j < src_gray.cols; j++) { 
             // Do your calculation on the pixel at i,j
             //pixel = <(j - centerEllipse.x), (i - centerEllipse.y)> * <grad_x(i,j), grad_y>
-            // 
-            // 
-            // 
-            // 
+
              // Define two vectors
-            double v_norm = pow((pow((j - centerEllipse.x), 2) + pow(i - centerEllipse.y, 2)), 0.5);
+            v_norm = pow((pow((j - centerEllipse.x), 2) + pow(i - centerEllipse.y, 2)), 0.5);
             Vec2d fromCenter( (j - centerEllipse.x)/v_norm, (i - centerEllipse.y)/ v_norm);
             Vec2d SobelVec(grad_x.at<uchar>(i, j), grad_y.at<uchar>(i, j));
             // Compute the cross product
-            double pixel = abs(fromCenter.dot(SobelVec));
-            //cout << "Vec fm c " << fromCenter << endl;
-            //cout << "SobelVec " << SobelVec << endl;
-            //cout << "Pixel " << pixel << endl;
-            //cout << endl;
+            pixel = abs(fromCenter.dot(SobelVec));
 
-            // Output the result
-            //cout << "The cross product: " << pixel << endl;
-
-
-
-
-            // Example: invert pixel values
-            //pixel = grad_x.at<uchar>(i, j) * ( abs(centerEllipse.x - j) / v_norm) + grad_y.at<uchar>(i, j) * ( abs(centerEllipse.y - i) / v_norm);
             // Update pixel in the image
             //imshow("src gray", src_gray);
             pixelVec.push_back(pixel);
@@ -452,7 +403,6 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     //std::cout << "Minimum element: " << min << std::endl;
     //std::cout << "Maximum element: " << max << std::endl;
 
-    // 
     // 
     //imshow("Sob x", grad_x);
     //imshow("Sob y", grad_y);
@@ -514,7 +464,7 @@ int main(int argc, char* argv[])
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\0.png");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
     if (!cap.isOpened()) {
@@ -546,7 +496,7 @@ int main(int argc, char* argv[])
     float abs_counter = 0.95;
 
     //Camera parameters
-    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 959.5, 0, 2666.666666666666, 539.5, 0, 0, 1);
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
@@ -561,14 +511,11 @@ int main(int argc, char* argv[])
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         //cout << " Frame #" << cikle << endl;
-        //cap >> sourceImage;
-        sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\0.png",1);
+        cap >> sourceImage;
+        //sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\0.png",1);
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
             break;
-        }
-        if (cycle == 25) {
-            imwrite("sourceCap.bmp", sourceImage);
         }
         vector<Point2f> gradcvConv = contr(sourceImage, ROI, pxCenterBall.back(), cropSize, colorFilter);
         vector<Point2f> grad2;
@@ -582,7 +529,7 @@ int main(int argc, char* argv[])
         findPlane(v_norm, max_plane, k, abs_counter, abs_iter); // Find plane
         inPoint(max_plane, v_norm, iva_norm, k);
 
-        if (true) {
+        if (false) {
             inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
             imwrite("RANSACWork.png", sourceImage);
         }
@@ -634,7 +581,6 @@ int main(int argc, char* argv[])
         //cv::waitKey(1); */
         cv::waitKey(1);
         cycle += 1;
-        break;
     }
     writer(resultsCord);
     auto end = std::chrono::high_resolution_clock::now();
