@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
+import numpy as np
+import matplotlib.pyplot as plt
+from ipywidgets import *
+from IPython.display import display
 
 def DeleteTrash(pathTxtFile):
     with open (pathTxtFile, 'r') as f:
@@ -17,42 +19,29 @@ def DeleteTrash(pathTxtFile):
         f.write(new_data)
 
 
-# In[2]:
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from ipywidgets import interact
 
 FindCord = np.loadtxt(r"./BallDetectorLogMomentWithCameraMatrix.txt")
 BlenderCord63 = np.loadtxt(r"./LogBlenderCoord63video.txt", delimiter=',')
+dt = 1.0/25.0
 
 
+def paint(TrueCord, FindCord):
+    fig, ax = plt.subplots()
+    ax.plot(FindCord, label = "Find")
+    ax.plot(TrueCord, label = "True")
+    ax.grid()
+    ax.legend()
+    #print (TrueCord, " \n vs \n", FindCord)
+    #plt.show()
 
-# In[3]:
+vx_True = np.diff(BlenderCord63[:,0]) /dt
+vx_Find = np.diff(FindCord[:,0]) /dt
 
-
-def paint(TrueCord = FindCord, FindCord = BlenderCord63):
-    plt.plot(FindCord, label = "Find")
-    plt.plot(TrueCord, label = "True")
-    plt.grid()
-    plt.legend()
-    plt.show()
-
-
-# In[4]:
-
-
-w = interact(paint(BlenderCord63[:,0], FindCord[:,0]) )
-
-
-# In[5]:
-
-
-
-
-
-# In[ ]:
+print("velocity: True", vx_True , '\n vs Find \n' , vx_Find )
+Loc = interact(paint(BlenderCord63[:,0], FindCord[:,0]) ) # Loc
+Velocity = interact(paint(vx_True, vx_Find ) ) #Velocity
 
 
 
