@@ -244,7 +244,7 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
     int offsetX = 0;
     int offsetY = 0;
     Mat origImage;
-
+    ROI = false;
     if (ROI) {
 
         //------------------ check range out rect-crop
@@ -415,12 +415,12 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
     //cout << "GradSoble" << gradSobel << endl;
     
-    for (const auto& point : gradSobel) {
+    /*for (const auto& point : gradSobel) {
         img.at<Vec3b>(point)[0] = 0;
         img.at<Vec3b>(point)[1] = 255;
         img.at<Vec3b>(point)[2] = 0;
-    } 
-    imwrite("img_with_SobelGrad.png", img);
+    } */
+    //imwrite("img_with_SobelGrad.png", img);
     //imshow("ImgSobel", img);
     //waitKey(0);
     
@@ -456,21 +456,19 @@ vector<Point2f> contr(Mat img, bool& ROI, Point2i pxCenterBall, int& const cropS
 
 int main(int argc, char* argv[])
 {
-
-    
     namedWindow("Source window", WINDOW_NORMAL);
     resizeWindow("Source window", 1280, 720);
 
     //namedWindow("Crop window", WINDOW_NORMAL);
     //resizeWindow("Crop window", 1280, 720);
 
-    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
+    //VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
     //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
 
-    if (!cap.isOpened()) {
+    /*if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
-    }
+    }*/
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     bool ROI = false;
@@ -496,7 +494,7 @@ int main(int argc, char* argv[])
     float abs_counter = 0.95;
 
     //Camera parameters
-    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 959.5, 0, 2666.666666666666, 539.5, 0, 0, 1);
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
@@ -511,8 +509,8 @@ int main(int argc, char* argv[])
     auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         //cout << " Frame #" << cikle << endl;
-        cap >> sourceImage;
-        //sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\0.png",1);
+        //cap >> sourceImage;
+        sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\1000imgConstZ\\" + to_string(cycle) + ".bmp" , 1);
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
             break;
@@ -561,7 +559,7 @@ int main(int argc, char* argv[])
         ProjectPointsFind[cycle].y = round(ProjectPointsFind[cycle].y);
         pxCenterBall.push_back(Point2i(ProjectPointsFind[cycle].x, ProjectPointsFind[cycle].y));
         //----------------------------------------------------------------------------------------------------------------------------------
-        std::cout << "My px center: x = " << pxCenterBall.back().x << ", y = " << pxCenterBall.back().y << std::endl;
+        //std::cout << "My px center: x = " << pxCenterBall.back().x << ", y = " << pxCenterBall.back().y << std::endl;
 
         // Draw center-------------------------------------
         sourceImage.at<Vec3b>(pxCenterBall.back())[2] = 0;  //some color
@@ -569,9 +567,9 @@ int main(int argc, char* argv[])
         sourceImage.at<Vec3b>(pxCenterBall.back())[1] = 0;
         circle(sourceImage, pxCenterBall.back(), 4, (200, 80, 200), -1);
         //Draw trajectory-----------------------------
-        for (int k = 1; k < pxCenterBall.size()-1; ++k) {
+        /* for (int k = 1; k < pxCenterBall.size() - 1; ++k) {
             cv::line(sourceImage, pxCenterBall[k], pxCenterBall[k + 1], (0, 0, 0), 3);
-        }
+        } */
 
         //imshow("Source window", sourceImage);
         /*char c = (char)cv::waitKey(1);
