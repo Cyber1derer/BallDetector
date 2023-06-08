@@ -494,7 +494,11 @@ int main(int argc, char* argv[])
     float abs_counter = 0.95;
 
     //Camera parameters
-    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 
+        2.88139419e+03, 0.00000000e+00, 6.49631015e+02,
+        0.00000000e+00, 2.86448593e+03, 6.35736609e+02,
+        0.00000000e+00, 0.00000000e+00, 1.00000000e+00 );
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
