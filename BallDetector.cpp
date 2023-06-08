@@ -544,7 +544,8 @@ int main(int argc, char* argv[])
         2.88139419e+03, 0.00000000e+00, 6.49631015e+02,
         0.00000000e+00, 2.86448593e+03, 6.35736609e+02,
         0.00000000e+00, 0.00000000e+00, 1.00000000e+00 );
-    vector<float> distCoeffs = { -1.05744945276261548273e-01, 1.19044028809361226995e-01, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 1.79929511462296715107e-01 };
+    //vector<float> distCoeffs = { -1.05744945276261548273e-01, 1.19044028809361226995e-01, 0.00000000000000000000e+00, 0.00000000000000000000e+00, 1.79929511462296715107e-01 };
+    vector<float> distCoeffs = { 0,0,0,0 }; 
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     //Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
      Mat Rx = (Mat_<double>(3, 3) << 0.00865067,  0.99984084, -0.01560338,
@@ -610,7 +611,7 @@ int main(int argc, char* argv[])
 
         if (true) {
             inPointPaint(v_norm, gradcvConv, sourceImage, max_plane, k);
-            imwrite("RANSACWork.png", sourceImage);
+            imwrite("RANSACWork" + to_string(cycle) + ".png", sourceImage);
         }
 
         //find the cone apex angele 

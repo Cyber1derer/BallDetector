@@ -1,0 +1,50 @@
+max counter0.24037
+iter216
+result = [-0.0541505, 0.211322, 3.03745]
+max counter0.231975
+iter212
+result = [-0.054485, 0.228506, 3.01323]
+max counter0.23217
+iter219
+result = [-0.0544868, 0.230781, 3.01848]
+max counter0.24159
+iter218
+result = [-0.0542718, 0.231366, 2.99894]
+max counter0.224806
+iter215
+result = [-0.0541418, 0.235695, 3.0328]
+max counter0.225519
+iter224
+result = [-0.0536582, 0.235477, 3.00286]
+max counter0.226138
+iter227
+result = [-0.0543281, 0.239751, 3.02839]
+ End
+
+
+
+
+dist = 0
+
+max counter0.235747
+iter216
+result = [-0.0534825, 0.209714, 3.02212]
+max counter0.23511
+iter212
+result = [-0.0546362, 0.228787, 3.02066]
+max counter0.230653
+iter219
+result = [-0.0540754, 0.230712, 3.0126]
+max counter0.247706
+iter218
+result = [-0.0543565, 0.231837, 3.00936]
+max counter0.229457
+iter215
+result = [-0.0542045, 0.2362, 3.0433]
+max counter0.228487
+iter224
+result = [-0.0537381, 0.235965, 3.01333]
+max counter0.227606
+iter227
+result = [-0.0544281, 0.24017, 3.03775]
+ End
