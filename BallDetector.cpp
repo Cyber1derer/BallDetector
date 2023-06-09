@@ -463,12 +463,12 @@ int main(int argc, char* argv[])
     //resizeWindow("Crop window", 1280, 720);
 
     //VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video\\video63Cycles.avi");
-    //VideoCapture cap("C:\\Users\\Vorku\\MyCodeProjects\\OctBall\\BallDetectorData\\video\\video63Cycles.avi");
+    VideoCapture cap("..\\..\\..\\..\\BallDetectorData\\video350.avi");
 
-    /*if (!cap.isOpened()) {
+    if (!cap.isOpened()) {
         cout << "Error opening video stream or file" << endl;
         return -1;
-    }*/
+    }
 
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     bool ROI = false;
@@ -494,7 +494,8 @@ int main(int argc, char* argv[])
     float abs_counter = 0.95;
 
     //Camera parameters
-    Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    //Mat cameraMatrix = (Mat_<double>(3, 3) << 2666.666666666666, 0, 960, 0, 2666.666666666666, 540, 0, 0, 1);
+    Mat cameraMatrix = (Mat_<double>(3, 3) << 1777.7777777777778, 0, 640.0, 0, 1777.7777777777778, 512.0, 0, 0, 1); 
     vector<float> distCoeffs = { 0,0,0,0 };
     Mat P = (Mat_<double>(3, 3) << 1, 0, 0, 0, 1, 0, 0, 0, 1);//New "ideal" cameramatrix
     Mat Rx = (Mat_<double>(3, 3) << -1, 0, 0, 0, -1, 0, 0, 0, 1); // Rotation matrix
@@ -507,10 +508,10 @@ int main(int argc, char* argv[])
     int cycle = 0;
    // while (cikle < 16) {
     auto start = std::chrono::high_resolution_clock::now();
-    while (true) {
+    while (cycle!=375) {
         //cout << " Frame #" << cikle << endl;
-        //cap >> sourceImage;
-        sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\1000imgConstZ\\" + to_string(cycle) + ".bmp" , 1);
+        cap >> sourceImage;
+        //sourceImage = imread("..\\..\\..\\..\\BallDetectorData\\1000imgConstZ\\" + to_string(cycle) + ".bmp" , 1);
         if (sourceImage.rows == 0 || sourceImage.cols == 0) {
             cout << "Picture not found or video end" << endl;
             break;
